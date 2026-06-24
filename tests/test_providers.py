@@ -1,6 +1,4 @@
 """Tests for provider config schema and /providers command."""
-import sys
-sys.path.insert(0, '/opt/employee-docs-bot')
 
 
 def test_providers_config_optional():

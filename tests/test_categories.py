@@ -1,7 +1,4 @@
 """Tests for WAC category definitions and folder creation."""
-import sys
-sys.path.insert(0, '/opt/employee-docs-bot')
-
 from bot import WAC_CATEGORIES
 
 

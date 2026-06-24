@@ -9,9 +9,15 @@ Designed for multi-tenant use. Each client (AFH) has a config entry mapping
 their chat_id to their Drive folder and service account.
 """
 
-import os, sys, re, json, logging, tempfile, subprocess, io
+import os, sys, re, json, logging, tempfile, subprocess, io, sqlite3, asyncio, uuid
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
+from enum import Enum, auto
+from dataclasses import dataclass, field
+
+# Supported file extensions for document processing
+SUPPORTED_EXTS = {".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif", ".docx", ".txt"}
+MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
 
 # --- Config ---
 CONFIG_FILE = Path(__file__).parent / "config.json"
@@ -24,8 +30,6 @@ with open(CONFIG_FILE) as f:
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_VISION_API_KEY", "")
-DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_MODEL = "deepseek-chat"
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -33,6 +37,253 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()]
 )
 log = logging.getLogger("docs-bot")
+
+
+def generate_doc_id() -> str:
+    """Generate a short unique document identifier for tracing."""
+    return "doc_" + uuid.uuid4().hex[:8]
+
+
+class DocLogger(logging.LoggerAdapter):
+    """Logger adapter that prefixes messages with a document ID."""
+
+    def process(self, msg, kwargs):
+        doc_id = self.extra.get("doc_id", "")
+        if doc_id:
+            return f"[{doc_id}] {msg}", kwargs
+        return msg, kwargs
+
+
+# --- State Machine ---
+
+class ChatState(Enum):
+    """Explicit states for per-chat document processing state machine."""
+    IDLE = auto()
+    AWAITING_CONFIRMATION = auto()
+    AWAITING_EMPLOYEE_CORRECTION = auto()
+    AWAITING_DOCUMENT_TYPE = auto()
+    FILING = auto()
+
+
+@dataclass
+class ChatSession:
+    """Per-chat session state for one document in flight."""
+    chat_id: int
+    state: ChatState
+    message_id: int = 0
+    file_path: str = ""
+    file_name: str = ""
+    text: str = ""
+    employee: str = ""
+    category: str = ""
+    description: str = ""
+    client: dict | None = None
+    employees: dict | None = None
+    doc_id: str = ""
+    awaiting: str = ""
+    created_at: datetime | None = None
+
+
+DB_DIR = Path(__file__).parent / "data"
+DB_PATH = DB_DIR / "pending.db"
+
+chat_states: dict[int, ChatSession] = {}    # chat_id -> single active session
+chat_locks: dict[int, asyncio.Lock] = {}    # per-chat mutex
+
+
+def init_db(db_path: str | Path | None = None) -> str:
+    """Initialise the SQLite database and create the sessions table."""
+    if db_path is None:
+        db_path = DB_PATH
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            chat_id INTEGER PRIMARY KEY,
+            message_id INTEGER DEFAULT 0,
+            state TEXT NOT NULL,
+            file_path TEXT DEFAULT '',
+            file_name TEXT DEFAULT '',
+            text TEXT DEFAULT '',
+            employee TEXT DEFAULT '',
+            category TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            doc_id TEXT DEFAULT '',
+            awaiting TEXT DEFAULT '',
+            created_at TEXT DEFAULT ''
+        )
+    """)
+    conn.commit()
+    conn.close()
+    return str(db_path)
+
+
+def _session_to_row(session: ChatSession) -> dict:
+    return dict(
+        chat_id=session.chat_id,
+        message_id=session.message_id,
+        state=session.state.name,
+        file_path=session.file_path,
+        file_name=session.file_name,
+        text=session.text,
+        employee=session.employee,
+        category=session.category,
+        description=session.description,
+        doc_id=session.doc_id,
+        awaiting=session.awaiting,
+        created_at=session.created_at.isoformat() if session.created_at else "",
+    )
+
+
+def _row_to_session(row: sqlite3.Row) -> ChatSession:
+    created = None
+    if row["created_at"]:
+        try:
+            created = datetime.fromisoformat(row["created_at"])
+        except (ValueError, TypeError):
+            created = None
+    return ChatSession(
+        chat_id=row["chat_id"],
+        message_id=row["message_id"],
+        state=ChatState[row["state"]],
+        file_path=row["file_path"],
+        file_name=row["file_name"],
+        text=row["text"],
+        employee=row["employee"],
+        category=row["category"],
+        description=row["description"],
+        doc_id=row["doc_id"],
+        awaiting=row["awaiting"],
+        created_at=created,
+    )
+
+
+def save_session(db_path: str | Path, session: ChatSession) -> None:
+    """Upsert a chat session into the database."""
+    row = _session_to_row(session)
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("""
+        INSERT OR REPLACE INTO sessions
+            (chat_id, message_id, state, file_path, file_name, text,
+             employee, category, description, doc_id, awaiting, created_at)
+        VALUES
+            (:chat_id, :message_id, :state, :file_path, :file_name, :text,
+             :employee, :category, :description, :doc_id, :awaiting, :created_at)
+    """, row)
+    conn.commit()
+    conn.close()
+
+
+def load_session(db_path: str | Path, chat_id: int) -> ChatSession | None:
+    """Load a session by chat_id, or None if not found."""
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cur = conn.execute("SELECT * FROM sessions WHERE chat_id = ?", (chat_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return _row_to_session(row)
+
+
+def delete_session(db_path: str | Path, chat_id: int) -> None:
+    """Delete a session from the database."""
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("DELETE FROM sessions WHERE chat_id = ?", (chat_id,))
+    conn.commit()
+    conn.close()
+
+
+def cleanup_old_sessions(db_path: str | Path, max_age_hours: int = 24) -> int:
+    """Delete sessions older than max_age_hours. Returns count removed."""
+    cutoff = datetime.now() - timedelta(hours=max_age_hours)
+    conn = sqlite3.connect(str(db_path))
+    cur = conn.execute("DELETE FROM sessions WHERE created_at != '' AND created_at < ?", (cutoff.isoformat(),))
+    removed = cur.rowcount
+    conn.commit()
+    conn.close()
+    return removed
+
+
+def get_chat_lock(chat_id: int) -> asyncio.Lock:
+    """Get or create a per-chat asyncio.Lock."""
+    if chat_id not in chat_locks:
+        chat_locks[chat_id] = asyncio.Lock()
+    return chat_locks[chat_id]
+
+
+# --- Roster Cache ---
+
+class RosterCache:
+    """In-memory cache for employee rosters with TTL-based expiry.
+
+    Each client (drive_root_id) has an independent cache entry.
+    On cache miss or TTL expiry, the fetch callback is called
+    to get fresh data from Drive.
+    """
+
+    def __init__(self, ttl_seconds: int = 1800):
+        self._ttl = ttl_seconds
+        self._data: dict[str, dict] = {}        # drive_root_id -> roster dict
+        self._timestamps: dict[str, float] = {}  # drive_root_id -> time of fetch
+
+    def get(self, drive_root_id: str, fetch_callable) -> dict:
+        """Return cached roster, or call fetch_callable on miss/expiry."""
+        import time
+        now = time.time()
+        cached = self._data.get(drive_root_id)
+        last_fetch = self._timestamps.get(drive_root_id, 0)
+
+        if cached is not None and (now - last_fetch) < self._ttl:
+            return cached
+
+        # Cache miss or expired — fetch fresh data
+        fresh = fetch_callable()
+        self._data[drive_root_id] = fresh
+        self._timestamps[drive_root_id] = time.time()
+        return fresh
+
+
+# Shared roster cache instance (one per process, 30-min TTL)
+_roster_cache = RosterCache(ttl_seconds=1800)
+
+# --- Temp File Registry ---
+_temp_files: set[str] = set()
+
+
+def register_temp_file(path: str) -> None:
+    """Register a temp file path for tracking and cleanup."""
+    _temp_files.add(path)
+
+
+def unregister_temp_file(path: str) -> None:
+    """Remove a temp file from tracking (after successful cleanup)."""
+    _temp_files.discard(path)
+
+
+def cleanup_stale_temp_files(max_age_hours: int = 24) -> int:
+    """Remove tracked temp files older than max_age_hours. Returns count removed."""
+    import time
+    now = time.time()
+    removed = 0
+    for path in list(_temp_files):
+        try:
+            mtime = os.path.getmtime(path)
+            if now - mtime > max_age_hours * 3600:
+                os.unlink(path)
+                _temp_files.discard(path)
+                removed += 1
+        except (FileNotFoundError, OSError):
+            _temp_files.discard(path)
+            continue
+    return removed
+
+
+def get_roster_cache(cache: RosterCache, drive_root_id: str, list_fn) -> dict:
+    """Convenience wrapper: get roster from cache, calling list_fn on miss."""
+    return cache.get(drive_root_id, list_fn)
+
 
 # --- Google Drive helpers ---
 from google.oauth2 import service_account
@@ -176,8 +427,33 @@ def classify_by_rules(text, filename, cat_keywords, employees):
     return emp_match, cat_match, None
 
 
+def parse_json_from_llm(content: str) -> dict | None:
+    """Extract and parse JSON from an LLM response, handling code fences."""
+    # Try to find JSON block within ```json ... ``` markers
+    fence_match = re.search(r'```(?:json)?\s*\n?({.*?})\s*\n?```', content, re.DOTALL)
+    if fence_match:
+        try:
+            return json.loads(fence_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Try bare JSON object (non-greedy outer match)
+    json_match = re.search(r'\{(?:[^{}]|(?:\{[^{}]*\}))*\}', content, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group())
+        except json.JSONDecodeError:
+            pass
+
+    return None
+
+
 def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint_cat=None):
-    """Fallback: use DeepSeek to classify. Optional hints from rules result."""
+    """Fallback: use Claude Haiku to classify. Optional hints from rules result."""
+    if not ANTHROPIC_API_KEY:
+        log.warning("ANTHROPIC_VISION_API_KEY not set — skipping LLM classification")
+        return None, None
+
     emp_list = ", ".join(sorted(set(v["name"] for v in employees.values())))
     cat_list = ", ".join(cat_keywords.keys())
 
@@ -195,37 +471,47 @@ Document text:
 {text[:3000]}"""
 
     payload = json.dumps({
-        "model": DEEPSEEK_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 300
+        "model": "claude-3-haiku-20240307",
+        "max_tokens": 300,
+        "messages": [{"role": "user", "content": prompt}]
     })
 
     try:
         import urllib.request
         req = urllib.request.Request(
-            "https://api.deepseek.com/chat/completions",
+            "https://api.anthropic.com/v1/messages",
             data=payload.encode(),
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+            },
             method="POST"
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read())
-        content = data["choices"][0]["message"]["content"]
+        content = data["content"][0]["text"]
 
-        # Extract JSON from response
-        json_match = re.search(r'\{[^}]+\}', content, re.DOTALL)
-        if json_match:
-            result = json.loads(json_match.group())
-            emp = result.get("employee", "")
-            cat = result.get("category", "")
-            # Validate against known lists
-            if cat not in cat_keywords:
-                cat = None
-            if emp.lower() not in employees:
-                emp = None
-            return emp, cat
+        result = parse_json_from_llm(content)
+        if result is None:
+            log.warning(f"Could not parse JSON from LLM response: {content[:300]}")
+            return None, None
+
+        emp = result.get("employee", "")
+        cat = result.get("category", "")
+
+        # Validate against known lists
+        if cat and cat not in cat_keywords:
+            log.info(f"LLM returned unknown category '{cat}' — clearing")
+            cat = None
+        if emp and emp.lower() not in employees:
+            log.info(f"LLM returned unknown employee '{emp}' — clearing")
+            emp = None
+
+        return emp, cat
+
     except Exception as e:
-        log.warning(f"DeepSeek classification failed: {e}")
+        log.warning(f"LLM classification failed: {e}")
 
     return None, None
 
@@ -270,8 +556,7 @@ def is_provider(client, emp_name):
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 
-# Store pending classifications
-pending = {}  # chat_id: {msg_id: {file_path, text, employee, category, guess_type, file_name}}
+# Pending classifications stored in chat_states dict + SQLite (data/pending.db)
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -292,10 +577,36 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not file:
         return
 
+    # Check file size
+    if hasattr(file, "file_size") and file.file_size and file.file_size > MAX_FILE_SIZE_BYTES:
+        mb = file.file_size / (1024 * 1024)
+        await update.message.reply_text(
+            f"❌ This file is too large ({mb:.1f} MB). Maximum file size is 20 MB."
+        )
+        return
+
+    # Check extension against supported types
+    if hasattr(file, "file_name") and file.file_name:
+        ext = Path(file.file_name).suffix.lower()
+        if ext and ext not in SUPPORTED_EXTS:
+            await update.message.reply_text(
+                f"❌ This file type is not supported. "
+                f"You sent a **{ext[1:].upper()}** file. "
+                f"I can only process: PDF, JPEG, PNG, HEIC, DOCX, and TXT files.",
+                parse_mode="Markdown"
+            )
+            return
+
+    # Generate document trace ID
+    doc_id = generate_doc_id()
+    dlog = DocLogger(log, {"doc_id": doc_id})
+    dlog.info("Document received")
+
     # Download to temp
     tg_file = await context.bot.get_file(file.file_id)
     suffix = Path(file.file_name or "doc.pdf").suffix if hasattr(file, "file_name") else ".jpg"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    tmp = tempfile.NamedTemporaryFile(delete=False, prefix=f"{doc_id}_", suffix=suffix)
+    register_temp_file(tmp.name)
     await tg_file.download_to_drive(tmp.name)
     fname = getattr(file, "file_name", f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}{suffix}")
 
@@ -304,78 +615,106 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Extract text
     text = extract_text(tmp.name)
     if not text or text.startswith("ERROR"):
+        dlog.warning(f"Text extraction failed: {text}")
         await update.message.reply_text(f"Could not extract text from this document.")
         tmp.close()
         os.unlink(tmp.name)
+        unregister_temp_file(tmp.name)
         return
 
     # Load roster
-    sa_key = Path(__file__).parent / client["service_account_key_file"]
-    if not sa_key.exists():
+    sa_key_path = Path(__file__).parent / client["service_account_key_file"]
+    if not sa_key_path.exists():
         await update.message.reply_text("Service account key not configured.")
         tmp.close()
         os.unlink(tmp.name)
+        unregister_temp_file(tmp.name)
         return
 
     try:
-        drive = get_drive_service(str(sa_key))
-        employees = list_employee_folders(drive, client["drive_root_id"])
+        drive = get_drive_service(str(sa_key_path))
+        employees = get_roster_cache(
+            _roster_cache,
+            client["drive_root_id"],
+            lambda: list_employee_folders(drive, client["drive_root_id"])
+        )
     except Exception as e:
         await update.message.reply_text(f"Could not access Google Drive: {e}")
         tmp.close()
         os.unlink(tmp.name)
+        unregister_temp_file(tmp.name)
         return
 
     # Classify
     emp, cat, method = classify(text, fname, client.get("cat_keywords", {}), employees)
 
-    if emp and cat:
-        # Ask for confirmation
-        msg = await update.message.reply_text(
-            f"📄 Looks like this is a **{cat}** for **{emp}**.\nIs that right?",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),
-                 InlineKeyboardButton("👎 No", callback_data="confirm_no")]
-            ])
+    async with get_chat_lock(chat_id):
+        dlog.info(f"Classification result: emp={emp or '?'}, cat={cat or '?'}, method={method}")
+        session = ChatSession(
+            chat_id=chat_id,
+            state=ChatState.AWAITING_CONFIRMATION,
+            file_path=tmp.name,
+            file_name=fname,
+            text=text,
+            employee=emp or "",
+            category=cat or "",
+            client=client,
+            employees=employees,
+            doc_id=doc_id,
+            created_at=datetime.now(),
         )
-        pending[(chat_id, msg.message_id)] = {
-            "file_path": tmp.name,
-            "file_name": fname,
-            "text": text,
-            "employee": emp,
-            "category": cat,
-            "client": client,
-            "employees": employees
-        }
-    else:
-        # Ask for employee name first
-        if not emp:
-            await update.message.reply_text(
-                "I couldn't identify the employee. What's their full name?",
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("🆕 New Employee", callback_data="new_employee")
-                ]])
-            )
-            pending[(chat_id, "awaiting_employee")] = {
-                "file_path": tmp.name,
-                "file_name": fname,
-                "text": text,
-                "client": client,
-                "employees": employees,
-                "awaiting": "employee"
-            }
-        else:
-            # Known employee but couldn't classify document
+
+        if emp and cat:
+            # Ask for confirmation
             msg = await update.message.reply_text(
-                f"📄 Found employee **{emp}**, but unsure of document type.\n"
-                f"Is this a new employee?",
+                f"📄 Looks like this is a **{cat}** for **{emp}**.\nIs that right?",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),
                      InlineKeyboardButton("👎 No", callback_data="confirm_no")]
                 ])
             )
+            session.message_id = msg.message_id
+        else:
+            # Could not classify — start manual correction flow with context
+            session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
+            session.awaiting = "employee"
+
+            # Craft helpful fallback message based on what failed
+            if not emp and not cat:
+                if method == "failed":
+                    fallback_msg = (
+                        "I couldn't auto-classify this document (the classification service "
+                        "is temporarily unavailable). Let me ask you instead:\n\n"
+                        "What's the employee's full name?"
+                    )
+                else:
+                    fallback_msg = (
+                        "I couldn't identify the employee or document type from the text. "
+                        "Let me ask you:\n\n"
+                        "What's the employee's full name?"
+                    )
+            else:
+                # Known employee but couldn't classify document
+                fallback_msg = (
+                    f"I found **{emp}** in the roster but couldn't determine "
+                    f"the document type. Let me ask you:\n\n"
+                    f"What type of document is this?"
+                )
+                session.employee = emp or ""
+                session.awaiting = "category"
+                session.state = ChatState.AWAITING_DOCUMENT_TYPE
+
+            await update.message.reply_text(
+                fallback_msg,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🆕 New Employee", callback_data="new_employee")
+                ]])
+            )
+
+        chat_states[chat_id] = session
+        save_session(DB_PATH, session)
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -386,49 +725,49 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg_id = query.message.message_id
     data = query.data
 
-    key = (chat_id, msg_id)
-
-    if key in pending:
-        info = pending.pop(key)
-
-    elif (chat_id, "awaiting_employee") in pending:
-        info = pending.pop((chat_id, "awaiting_employee"))
-        if data == "new_employee":
-            info["awaiting"] = "employee_name"
-            pending[(chat_id, "awaiting_new_name")] = info
-            await query.edit_message_text(
-                "What's the new employee's full name? Example: John Smith, CNA"
-            )
-            return
-        else:
-            info["awaiting"] = "employee_name"
-            pending[(chat_id, "awaiting_employee_name")] = info
-            await query.edit_message_text(
-                "Type the employee's full name."
-            )
-            return
-    else:
-        # Check other pending states
-        for k in list(pending.keys()):
-            if k[0] == chat_id and k[1] in ("awaiting_new_name", "awaiting_employee_name", "awaiting_category"):
-                info = pending.pop(k)
-                break
-        else:
+    async with get_chat_lock(chat_id):
+        session = chat_states.get(chat_id)
+        if session is None:
             await query.edit_message_text("Sorry, this expired. Please send the document again.")
             return
 
-    if data == "confirm_yes":
-        await file_document(query, info)
-    elif data == "confirm_no":
-        # Ask what's wrong
-        info["awaiting"] = "employee"
-        pending[(chat_id, "awaiting_correction")] = info
-        await query.edit_message_text(
-            "What's the employee's full name?",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🆕 New Employee", callback_data="new_employee_correct")
-            ]])
-        )
+        # If the session has a message_id, verify it matches
+        if session.message_id and session.message_id != msg_id:
+            # Check if this is a string-keyed callback (new_employee button on the prompt message)
+            if data == "new_employee":
+                session.awaiting = "employee_name"
+                session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
+                chat_states[chat_id] = session
+                save_session(DB_PATH, session)
+                await query.edit_message_text(
+                    "What's the new employee's full name? Example: John Smith, CNA"
+                )
+                return
+            await query.edit_message_text("Sorry, this expired. Please send the document again.")
+            return
+
+        if data == "confirm_yes":
+            session.state = ChatState.FILING
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
+            # Release lock before file_document (it does I/O)
+            # file_document will manage the lock itself
+            await file_document(query, session)
+
+        elif data == "confirm_no":
+            session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
+            session.awaiting = "employee"
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
+            await query.edit_message_text(
+                "What's the employee's full name?",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🆕 New Employee", callback_data="new_employee_correct")
+                ]])
+            )
+
+        else:
+            await query.edit_message_text("Sorry, this expired. Please send the document again.")
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -436,77 +775,78 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     text = update.message.text.strip()
 
-    # Check pending states
-    info = None
-    for k in list(pending.keys()):
-        if k[0] == chat_id:
-            info = pending.pop(k)
-            break
+    async with get_chat_lock(chat_id):
+        session = chat_states.get(chat_id)
+        if session is None:
+            return  # No pending state for this chat — ignore text (scoped handler)
 
-    if not info:
-        return
+        state = session.awaiting
 
-    state = info.get("awaiting", "")
+        if state == "employee":
+            # User provided employee name
+            session.employee = text
+            session.awaiting = "category"
+            session.state = ChatState.AWAITING_DOCUMENT_TYPE
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
+            await update.message.reply_text(
+                "What type of document is this?\n"
+                "Examples: CPR Certificate, TB Test Results, Driver's License, Background Check, etc."
+            )
 
-    if state == "employee":
-        # User provided employee name
-        info["employee"] = text
-        info["awaiting"] = "category"
-        pending[(chat_id, "awaiting_category")] = info
-        await update.message.reply_text(
-            "What type of document is this?\n"
-            "Examples: CPR Certificate, TB Test Results, Driver's License, Background Check, etc."
-        )
+        elif state == "category":
+            # User provided category/type
+            client = session.client or {}
+            cat = match_category(text, client.get("cat_keywords", {}))
+            session.category = cat if cat else text
+            session.description = text
+            session.state = ChatState.AWAITING_CONFIRMATION
+            session.message_id = 0  # Will be set when we send the confirmation
 
-    elif state == "category":
-        # User provided category/type
-        info["user_description"] = text
-        # Map to a WAC category
-        cat = match_category(text, info["client"].get("cat_keywords", {}))
-        info["category"] = cat if cat else text
+            msg = await update.message.reply_text(
+                f"📄 Filing as **{session.category}** for **{session.employee}**.\nIs that right?",
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),
+                     InlineKeyboardButton("👎 No", callback_data="confirm_no")]
+                ])
+            )
+            session.message_id = msg.message_id
+            session.awaiting = ""
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
 
-        msg = await update.message.reply_text(
-            f"📄 Filing as **{info['category']}** for **{info.get('employee', '?')}**.\nIs that right?",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),
-                 InlineKeyboardButton("👎 No", callback_data="confirm_no")]
-            ])
-        )
-        pending[(chat_id, msg.message_id)] = info
-
-    elif state == "employee_name":
-        info["employee"] = text
-        info["awaiting"] = "category"
-        pending[(chat_id, "awaiting_category")] = info
-        await update.message.reply_text(
-            "What type of document is this?\n"
-            "Examples: CPR Certificate, TB Test Results, Driver's License"
-        )
-
-    elif state == "new_employee":
-        # Could be a new employee
-        info["employee"] = text
-        info["category"] = None
-        info["awaiting"] = "category"
-        pending[(chat_id, "awaiting_category")] = info
-        await update.message.reply_text(
-            "What type of document is this?"
-        )
+        elif state == "employee_name":
+            session.employee = text
+            session.awaiting = "category"
+            session.state = ChatState.AWAITING_DOCUMENT_TYPE
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
+            await update.message.reply_text(
+                "What type of document is this?\n"
+                "Examples: CPR Certificate, TB Test Results, Driver's License"
+            )
 
 
 async def file_document(query, info):
     """Upload the document to the correct Drive folder."""
-    client = info["client"]
-    emp_name = info.get("employee", "")
-    cat_name = info.get("category", "")
-    file_path = info.get("file_path", "")
-    file_name = info.get("file_name", "")
+    client = info.client if hasattr(info, 'client') else info.get("client", {})
+    emp_name = info.employee if hasattr(info, 'employee') else info.get("employee", "")
+    cat_name = info.category if hasattr(info, 'category') else info.get("category", "")
+    file_path = info.file_path if hasattr(info, 'file_path') else info.get("file_path", "")
+    file_name = info.file_name if hasattr(info, 'file_name') else info.get("file_name", "")
+    doc_id = info.doc_id if hasattr(info, 'doc_id') else ""
+    dlog = DocLogger(log, {"doc_id": doc_id}) if doc_id else log
+    dlog.info(f"Filing: {emp_name} / {cat_name}")
 
     try:
-        sa_key = Path(__file__).parent / client["service_account_key_file"]
-        drive = get_drive_service(str(sa_key))
-        employees = list_employee_folders(drive, client["drive_root_id"])
+        sa_key_path = Path(__file__).parent / client["service_account_key_file"]
+        drive = get_drive_service(str(sa_key_path))
+        employees = get_roster_cache(
+            _roster_cache,
+            client["drive_root_id"],
+            lambda: list_employee_folders(drive, client["drive_root_id"])
+        )
 
         emp_key = emp_name.lower().strip()
         if emp_key not in employees:
@@ -530,8 +870,9 @@ async def file_document(query, info):
 
         # Upload robot.txt too
         robot_path = file_path + "-robot.txt"
+        session_text = info.text if hasattr(info, 'text') else info.get("text", "")
         with open(robot_path, "w") as rf:
-            rf.write(f"SOURCE: Telegram\nFILED: {datetime.now().isoformat()}\n\n--- EXTRACTED TEXT ---\n{info.get('text', '')}\n")
+            rf.write(f"SOURCE: Telegram\nFILED: {datetime.now().isoformat()}\n\n--- EXTRACTED TEXT ---\n{session_text}\n")
         robot_name = os.path.splitext(safe_name)[0] + "-robot.txt"
         upload_file(drive, cat_folder_id, robot_path, robot_name, "text/plain")
         os.unlink(robot_path)
@@ -540,13 +881,21 @@ async def file_document(query, info):
             f"✅ Filed **{safe_name}** into **{emp_name}** → **{cat_name}**",
             parse_mode="Markdown"
         )
+        dlog.info(f"Filed: {safe_name} -> {emp_name}/{cat_name} (file_id={fid})")
 
     except Exception as e:
         log.error(f"Filing failed: {e}")
         await query.edit_message_text(f"❌ Failed to file: {e}")
     finally:
+        # Clean up session and temp file
+        chat_id = query.message.chat_id if hasattr(query, 'message') else None
+        if chat_id:
+            async with get_chat_lock(chat_id):
+                chat_states.pop(chat_id, None)
+                delete_session(DB_PATH, chat_id)
         if file_path and os.path.exists(file_path):
             os.unlink(file_path)
+            unregister_temp_file(file_path)
 
 
 async def create_employee_folders(drive, root_id, emp_name):
@@ -630,7 +979,11 @@ async def providers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         drive = get_drive_service(str(sa_key))
-        employees = list_employee_folders(drive, client["drive_root_id"])
+        employees = get_roster_cache(
+            _roster_cache,
+            client["drive_root_id"],
+            lambda: list_employee_folders(drive, client["drive_root_id"])
+        )
     except Exception as e:
         await update.message.reply_text(f"Could not access Google Drive: {e}")
         return
@@ -660,6 +1013,42 @@ def main():
     if not TELEGRAM_TOKEN:
         log.error("TELEGRAM_BOT_TOKEN not set in environment")
         sys.exit(1)
+
+    # Initialise SQLite persistence
+    db_path = init_db()
+    removed = cleanup_old_sessions(db_path)
+    if removed:
+        log.info(f"Cleaned up {removed} stale session(s) from database")
+
+    # Sweep stale temp files from the registry
+    stale = cleanup_stale_temp_files()
+    if stale:
+        log.info(f"Cleaned up {stale} stale temp file(s) from registry")
+
+    # Also sweep /tmp for orphaned doc_* files from previous crash cycles
+    import glob
+    orphaned = 0
+    for f in glob.glob(f"/tmp/doc_*"):
+        try:
+            age = (datetime.now() - datetime.fromtimestamp(os.path.getmtime(f))).total_seconds()
+            if age > 86400:  # >24h
+                os.unlink(f)
+                orphaned += 1
+        except (FileNotFoundError, OSError):
+            continue
+    if orphaned:
+        log.info(f"Cleaned up {orphaned} orphaned temp file(s) from /tmp")
+
+    # Load pending sessions from DB into in-memory chat_states
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cur = conn.execute("SELECT * FROM sessions")
+    for row in cur.fetchall():
+        session = _row_to_session(row)
+        chat_states[session.chat_id] = session
+    conn.close()
+    if chat_states:
+        log.info(f"Loaded {len(chat_states)} pending session(s) from database")
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 

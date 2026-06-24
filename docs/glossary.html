@@ -80,13 +80,14 @@
   <table>
     <tr><th>Decision</th><th>Choice</th></tr>
     <tr><td>Bot Runtime</td><td>Single Python script using <code>python-telegram-bot</code>. One systemd service per Telegram bot token (test + production), each sharing the same <code>config.json</code>.</td></tr>
-    <tr><td>Document Classification</td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if ambiguous, the rules result is treated as a hint and elevated to DeepSeek LLM, (3) if LLM fails → manual inline-keyboard correction.</td></tr>
+    <tr><td>Document Classification</td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if ambiguous, the rules result is treated as a hint and elevated to Claude Haiku LLM, (3) if LLM fails → manual inline-keyboard correction with explanatory fallback message.</td></tr>
     <tr><td>OCR / Text Extraction</td><td><code>doc-extract.py</code>. Uses PyMuPDF + Anthropic Haiku vision for scanned docs. HEIC/HEIF via <code>pillow-heif</code>.</td></tr>
-    <tr><td>Drive Auth</td><td>Single Google service account shared by all clients. Access controlled at the Drive folder level.</td></tr>
-    <tr><td>Confirmation UX</td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts.</td></tr>
-    <tr><td>Employee Roster</td><td>Scanned from Drive folder names at runtime. Providers flagged in <code>config.json</code> for audit.</td></tr>
-    <tr><td>Provider vs. Caregiver</td><td>No structural folder split. Config marks providers (<code>"providers": ["Sandra Namwase"]</code>). Audit checks 01–08 + facility docs for providers, 01–07 for caregivers.</td></tr>
-    <tr><td>Client Onboarding</td><td>Omega Digital administrator adds a new client entry to <code>config.json</code> with their Telegram chat ID and Drive root folder ID. Each client gets their own Telegram bot token and systemd instance.</td></tr>
+    <tr><td>Drive Auth</td><td>Per-client Google service accounts. Each client has their own SA key with Editor access scoped to their Drive folder only. Eliminates cross-tenant blast radius.</td></tr>
+    <tr><td>Confirmation UX</td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts. Only entered when a pending state exists for that chat.</td></tr>
+    <tr><td>Employee Roster</td><td>Scanned from Drive folder names on first document request, then cached in-memory with 30-minute TTL. Auto-refreshes on cache miss. Eliminates per-document Drive API calls.</td></tr>
+    <tr><td>State Persistence</td><td>SQLite database (<code>pending.db</code> in <code>data/</code>). All pending classifications survive crashes and restarts. Documents older than 24 hours cleaned on startup.</td></tr>
+    <tr><td>State Machine</td><td>Per-chat <code>ChatSession</code> with explicit <code>ChatState</code> enum. <code>asyncio.Lock</code> per chat prevents race conditions on concurrent transitions.</td></tr>
+    <tr><td>Observability</td><td>Each document gets a <code>doc_xxx</code> UUID at pipeline entry, threaded through all log lines. Enables per-document tracing.</td></tr>
   </table>
 </div>
 
