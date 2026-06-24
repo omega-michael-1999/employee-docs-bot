@@ -101,40 +101,94 @@ WAC_CATEGORIES = [
     "07 - Nurse Delegation", "08 - Administrator Training"
 ]
 
+def _word_boundary_match(needle, haystack):
+    """Check if needle appears as a whole word in haystack."""
+    if not needle or not haystack:
+        return False
+    try:
+        pattern = r'(?<![a-zA-Z])' + re.escape(needle) + r'(?![a-zA-Z])'
+        return bool(re.search(pattern, haystack))
+    except re.error:
+        return needle in haystack
+
+
+def _emp_confidence(key):
+    """High confidence if the name has multiple words (full name), low if single-word."""
+    name_part = key.split(",")[0].strip()
+    return "high" if " " in name_part else "low"
+
+
+def _keyword_shared_count(keyword, cat_keywords):
+    """Count how many categories a keyword appears in."""
+    count = 0
+    for kws in cat_keywords.values():
+        if keyword in kws:
+            count += 1
+    return count
+
+
 def classify_by_rules(text, filename, cat_keywords, employees):
-    """Try to classify by keyword matching. Returns (employee_name, category) or (None, None)."""
+    """Try to classify by keyword matching.
+
+    Returns (employee_name, category, confidence).
+    confidence is "high", "low", or None.
+    """
     text_lower = text.lower() if text else ""
     fname_lower = filename.lower() if filename else ""
+    combined = f"{text_lower} {fname_lower}"
 
     # Find employee
     emp_match = None
+    emp_conf = None
     for key, info in employees.items():
         parts = key.split(",")[0].strip()
-        if parts in text_lower or parts in fname_lower:
+        if _word_boundary_match(parts.lower(), combined):
             emp_match = info["name"]
+            emp_conf = _emp_confidence(key)
             break
 
-    # Find category
+    # Find category and track which keyword matched
     cat_match = None
+    cat_conf = None
+    matched_kw = None
     for cat, kws in cat_keywords.items():
         for kw in kws:
-            if kw in text_lower or kw in fname_lower:
+            if _word_boundary_match(kw.lower(), combined):
                 cat_match = cat
+                matched_kw = kw
                 break
         if cat_match:
             break
 
-    return emp_match, cat_match
+    # Determine category confidence
+    if cat_match and matched_kw:
+        shared = _keyword_shared_count(matched_kw, cat_keywords)
+        cat_conf = "low" if shared > 1 else "high"
+
+    # Overall confidence: high only if both emp and cat are high
+    if emp_match and cat_match:
+        if emp_conf == "high" and cat_conf == "high":
+            return emp_match, cat_match, "high"
+        else:
+            return emp_match, cat_match, "low"
+
+    # Partial match — return what we found, even if one is None
+    return emp_match, cat_match, None
 
 
-def classify_by_llm(text, filename, employees, cat_keywords):
-    """Fallback: use DeepSeek to classify."""
+def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint_cat=None):
+    """Fallback: use DeepSeek to classify. Optional hints from rules result."""
     emp_list = ", ".join(sorted(set(v["name"] for v in employees.values())))
     cat_list = ", ".join(cat_keywords.keys())
+
+    hint_line = ""
+    if hint_emp or hint_cat:
+        hint_line = f"\nRules suggest: employee={hint_emp or '?'}, category={hint_cat or '?'}. Verify if this is correct."
+
     prompt = f"""Given this document text, identify:
 1. Which employee does this belong to? Choose from: {emp_list}
 2. What document type is it? Choose from the categories or describe it.
-
+{hint_line}
 Return ONLY valid JSON: {{"employee": "Full Name", "category": "Category Name", "description": "brief description"}}
 
 Document text:
@@ -177,18 +231,39 @@ Document text:
 
 
 def classify(text, filename, cat_keywords, employees):
-    """Hybrid: try rules first, fall back to LLM."""
-    emp, cat = classify_by_rules(text, filename, cat_keywords, employees)
-    if emp and cat:
-        log.info(f"Rules classified: {emp} / {cat}")
+    """Three-tier: rules (with confidence) → LLM → manual.
+
+    Returns (employee, category, method) where method is one of
+    "rules", "llm", or "failed".
+    """
+    emp, cat, conf = classify_by_rules(text, filename, cat_keywords, employees)
+
+    # Tier 1: High-confidence rules match — return immediately
+    if conf == "high":
+        log.info(f"Rules classified (high confidence): {emp} / {cat}")
         return emp, cat, "rules"
 
-    emp2, cat2 = classify_by_llm(text, filename, employees, cat_keywords)
+    # Tier 2: Low confidence or partial match — elevate to LLM with hint
+    if emp or cat:
+        log.info(f"Rules classified (low confidence): {emp or '?'} / {cat or '?'} — elevating to LLM")
+        emp2, cat2 = classify_by_llm(text, filename, employees, cat_keywords,
+                                      hint_emp=emp, hint_cat=cat)
+    else:
+        emp2, cat2 = classify_by_llm(text, filename, employees, cat_keywords)
+
     if emp2 or cat2:
         log.info(f"LLM classified: {emp2 or '?'} / {cat2 or '?'}")
         return emp2, cat2, "llm"
 
+    # Tier 3: LLM also failed — manual correction
+    log.info("Classification failed — manual correction needed")
     return None, None, "failed"
+
+
+def is_provider(client, emp_name):
+    """Check if an employee is flagged as a provider in the client config."""
+    providers = client.get("providers", [])
+    return emp_name in providers
 
 
 # --- Bot ---
@@ -491,11 +566,8 @@ async def create_employee_folders(drive, root_id, emp_name):
     emp_folder = drive.files().create(body=emp_meta, supportsAllDrives=True).execute()
     emp_id = emp_folder["id"]
 
-    # Create category subfolders
-    categories = ["01 - Identity & Employment", "02 - Background Check", "03 - Health Screening",
-                  "04 - CPR & First Aid", "05 - Orientation & Training", "06 - HCA Certification & CE",
-                  "07 - Nurse Delegation"]
-    for cat in categories:
+    # Create category subfolders — use the global WAC_CATEGORIES list
+    for cat in WAC_CATEGORIES:
         drive.files().create(
             body={"name": cat, "parents": [emp_id], "mimeType": "application/vnd.google-apps.folder"},
             supportsAllDrives=True
@@ -543,6 +615,47 @@ def get_client_config(chat_id):
     return None
 
 
+async def providers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /providers — list provider vs caregiver status for all employees."""
+    chat_id = update.effective_chat.id
+    client = get_client_config(chat_id)
+    if not client:
+        await update.message.reply_text("This chat is not configured for document filing.")
+        return
+
+    sa_key = Path(__file__).parent / client["service_account_key_file"]
+    if not sa_key.exists():
+        await update.message.reply_text("Service account key not configured.")
+        return
+
+    try:
+        drive = get_drive_service(str(sa_key))
+        employees = list_employee_folders(drive, client["drive_root_id"])
+    except Exception as e:
+        await update.message.reply_text(f"Could not access Google Drive: {e}")
+        return
+
+    if not employees:
+        await update.message.reply_text("No employees found in Drive.")
+        return
+
+    lines = ["📋 **Employee Provider Status**\n"]
+    for key, info in sorted(employees.items()):
+        name = info["name"]
+        is_prov = is_provider(client, name)
+        icon = "🏢" if is_prov else "👤"
+        role = "Provider" if is_prov else "Caregiver"
+        lines.append(f"{icon} **{name}** — {role}")
+
+    # Split into multiple messages if too long
+    msg = "\n".join(lines)
+    if len(msg) > 4000:
+        for i in range(0, len(msg), 4000):
+            await update.message.reply_text(msg[i:i + 4000], parse_mode="Markdown")
+    else:
+        await update.message.reply_text(msg, parse_mode="Markdown")
+
+
 def main():
     if not TELEGRAM_TOKEN:
         log.error("TELEGRAM_BOT_TOKEN not set in environment")
@@ -550,6 +663,7 @@ def main():
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
+    app.add_handler(CommandHandler("providers", providers_command))
     app.add_handler(MessageHandler(filters.PHOTO | filters.DocumentCategory("application/pdf") | filters.DocumentCategory("image/*"), handle_document))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
