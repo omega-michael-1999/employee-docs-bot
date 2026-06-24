@@ -1,7 +1,4 @@
 """Tests for document classification logic."""
-import sys
-sys.path.insert(0, '/opt/employee-docs-bot')
-
 from bot import classify_by_rules, classify, WAC_CATEGORIES
 
 

@@ -102,15 +102,19 @@
   <ul>
     <li><strong>Single bot binary, one systemd instance per token.</strong> The same <code>bot.py</code> and <code>config.json</code> are shared. Each instance reads its own <code>.env</code> with a different <code>TELEGRAM_BOT_TOKEN</code>. Chat ID routing in <code>config.json</code> distinguishes clients.</li>
     <li><strong>Multi-tenant from day one.</strong> <code>config.json</code> contains an array of client objects. No code changes needed to add a client. The Omega Digital administrator onboards new clients.</li>
-    <li><strong>Shared Google service account.</strong> One SA key with Editor access to all client Drive folders. Folder-level permissions control isolation.</li>
+    <li><strong>Per-client Google service accounts.</strong> Each client has their own SA key with Editor access scoped to their Drive folder only. Eliminates cross-tenant blast radius. Config schema already supports per-client <code>service_account_key_file</code>.</li>
+    <li><strong>Employee roster cache with 30-minute TTL.</strong> Roster is fetched from Drive on first document, then cached in-memory with automatic refresh on cache miss. Eliminates per-document Drive API calls.</li>
+    <li><strong>SQLite-based state persistence.</strong> Pending classifications survive crashes and restarts. One <code>pending.db</code> file at <code>/opt/employee-docs-bot/data/</code>. Documents older than 24 hours are cleaned up on startup.</li>
+    <li><strong>Per-chat state machine with explicit ChatState enum.</strong> Replaces fragile multi-key pending dict with a single <code>ChatSession</code> per chat_id. <code>asyncio.Lock</code> per chat prevents race conditions on concurrent state transitions.</li>
+    <li><strong>Document UUID tracing.</strong> Each document receives a <code>doc_xxx</code> UUID at pipeline entry, passed through every log line. Enables per-document tracing via <code>grep doc_abc123 journalctl</code>.</li>
   </ul>
 
   <h3>Document Processing Pipeline</h3>
   <ol style="list-style-type:decimal; padding-left:20px;">
-    <li><strong>Receive</strong> — Telegram photo, PDF, or image file. HEIC supported via <code>pillow-heif</code>.</li>
+    <li><strong>Receive</strong> — Telegram photo, PDF, or image file (<20MB). HEIC supported via <code>pillow-heif</code>. Unsupported types rejected with guidance.</li>
     <li><strong>Extract text</strong> — <code>doc-extract.py</code>: PyPDF2 for PDF text, Anthropic Haiku vision for scanned, native DOCX/TXT. 300s timeout.</li>
-    <li><strong>Classify</strong> — Three-tier: rules → LLM (if ambiguous) → manual correction.</li>
-    <li><strong>Confirm</strong> — Inline keyboard [👍 Yes] [👎 No]. Text correction flow if wrong.</li>
+    <li><strong>Classify</strong> — Three-tier: rules → LLM (Claude Haiku, if ambiguous) → manual correction with explanatory fallback message.</li>
+    <li><strong>Confirm</strong> — Inline keyboard [👍 Yes] [👎 No]. Text correction flow if wrong. Only entered when a pending state exists for that chat.</li>
     <li><strong>File</strong> — Upload to <code>DRIVE_ROOT/CAREGIVERS/{Employee}/{Category}/{Name} - {Description}.{ext}</code> + companion <code>-robot.txt</code>.</li>
     <li><strong>Onboard new employee</strong> — Create employee folder with all 8 WAC subfolders if name not found.</li>
   </ol>
@@ -169,7 +173,6 @@
 <div class="section">
   <h2><span class="accent"></span>Out of Scope</h2>
   <ul>
-    <li>Persistent pending state — in-memory dict accepted for v1; restart = re-send document</li>
     <li>Batch document processing — each document processed independently</li>
     <li>Audit report generation — bot files documents; audits remain a separate process</li>
     <li>Dashboard or web UI — all interaction via Telegram inline buttons and text</li>

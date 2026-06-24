@@ -1,7 +1,4 @@
 """Tests for ambiguity-aware three-tier classification."""
-import sys
-sys.path.insert(0, '/opt/employee-docs-bot')
-
 from bot import classify_by_rules, WAC_CATEGORIES
 
 
