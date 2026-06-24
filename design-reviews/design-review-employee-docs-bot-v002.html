@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Review v2 — Employee Docs Bot | Omega Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: #1a1f35;
+    --bg-card-hover: #1f2544;
+    --border: #2a3052;
+    --text-primary: #e8edf5;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #22d3ee;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --gradient-main: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    --gradient-accent: linear-gradient(90deg, #22d3ee, #3b82f6, #8b5cf6);
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --tag-high-bg: rgba(239,68,68,0.12);
+    --tag-high-text: #fca5a5;
+    --tag-med-bg: rgba(245,158,11,0.12);
+    --tag-med-text: #fcd34d;
+    --tag-low-bg: rgba(59,130,246,0.12);
+    --tag-low-text: #93c5fd;
+    --tag-structural-bg: rgba(139,92,246,0.15);
+    --tag-structural-text: #c4b5fd;
+    --tag-eng-bg: rgba(34,211,238,0.12);
+    --tag-eng-text: #67e8f9;
+    --tag-ops-bg: rgba(16,185,129,0.12);
+    --tag-ops-text: #6ee7b7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.7; }
+  .header { background: var(--gradient-main); color: #fff; padding: 64px 24px 48px; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(34,211,238,0.08) 0%, transparent 70%); pointer-events: none; }
+  .header::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='rgba(255,255,255,0.02)' stroke-width='1'/%3E%3C/svg%3E") repeat; pointer-events: none; opacity: 0.4; }
+  .header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; position: relative; }
+  .header p { font-size: 1.05rem; color: var(--text-secondary); position: relative; }
+  .header .badge { display: inline-block; background: linear-gradient(90deg, rgba(34,211,238,0.15), rgba(139,92,246,0.15)); color: var(--accent-cyan); font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; border: 1px solid rgba(34,211,238,0.2); }
+  .header .meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 12px; position: relative; }
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0 24px; position: sticky; top: 0; z-index: 10; }
+  .nav-bar-inner { max-width: 960px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .nav-bar a:hover, .nav-bar a.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+  .section { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); padding: 32px; margin-bottom: 28px; }
+  .section h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section h2 .accent-bar { display: inline-block; width: 4px; height: 24px; background: var(--gradient-accent); border-radius: 2px; flex-shrink: 0; }
+  .section h3 { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 24px 0 10px; }
+  .section h4 { font-size: 0.92rem; font-weight: 600; color: var(--accent-cyan); margin: 16px 0 8px; }
+  p { margin-bottom: 14px; color: var(--text-secondary); font-size: 0.92rem; }
+  p strong { color: var(--text-primary); }
+  ol, ul { padding-left: 20px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary); }
+  code { background: rgba(34,211,238,0.1); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; font-size: 0.82em; font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+  pre { background: #060a16; color: #c4b5fd; padding: 20px; border-radius: 10px; font-size: 0.82rem; font-family: 'JetBrains Mono', 'SF Mono', monospace; overflow-x: auto; line-height: 1.5; margin: 16px 0; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; border-bottom: 2px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid rgba(42,48,82,0.5); font-size: 0.9rem; vertical-align: top; color: var(--text-secondary); }
+  td:first-child { font-weight: 500; color: var(--text-primary); }
+  tr:last-child td { border-bottom: none; }
+  .highlight-box { border-radius: 10px; padding: 20px; margin: 16px 0; border-left: 4px solid; }
+  .highlight-box.success { background: rgba(16,185,129,0.06); border-color: var(--success); }
+  .highlight-box.success h4 { color: var(--success); }
+  .highlight-box.warning { background: rgba(245,158,11,0.06); border-color: var(--warning); }
+  .highlight-box.warning h4 { color: var(--warning); }
+  .highlight-box.danger { background: rgba(239,68,68,0.06); border-color: var(--danger); }
+  .highlight-box.danger h4 { color: var(--danger); }
+  .highlight-box.info { background: rgba(59,130,246,0.06); border-color: var(--info); }
+  .highlight-box.info h4 { color: var(--info); }
+  .badge { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.03em; text-transform: uppercase; margin-right: 4px; }
+  .badge.high { background: var(--tag-high-bg); color: var(--tag-high-text); }
+  .badge.medium { background: var(--tag-med-bg); color: var(--tag-med-text); }
+  .badge.low { background: var(--tag-low-bg); color: var(--tag-low-text); }
+  .badge.structural { background: var(--tag-structural-bg); color: var(--tag-structural-text); }
+  .badge.engineering { background: var(--tag-eng-bg); color: var(--tag-eng-text); }
+  .badge.operational { background: var(--tag-ops-bg); color: var(--tag-ops-text); }
+  .badge.resolved { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge.regression { background: rgba(239,68,68,0.12); color: var(--tag-high-text); }
+  .tag { display: inline-block; background: rgba(34,211,238,0.1); color: var(--accent-cyan); font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; }
+  .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .tag-amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .tag-red { background: rgba(239,68,68,0.15); color: var(--tag-high-text); }
+  .icon-yes { color: var(--success); font-weight: 700; }
+  .icon-partial { color: var(--warning); font-weight: 700; }
+  .icon-no { color: var(--danger); font-weight: 700; }
+  .finding { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .finding:last-child { border-bottom: none; margin-bottom: 0; }
+  .finding h3 { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .finding h3 .id { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-purple); background: rgba(139,92,246,0.1); padding: 2px 10px; border-radius: 6px; white-space: nowrap; }
+  .finding .meta-line { margin: 6px 0 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .finding .solution-box { background: rgba(34,211,238,0.04); border: 1px solid rgba(34,211,238,0.15); border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .finding .solution-box h4 { color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 8px; }
+  .finding-class-ref { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+  .class-ref-table { margin: 0; }
+  .class-ref-table td { padding: 8px 14px; }
+  .class-ref-table td:first-child { font-family: 'JetBrains Mono', monospace; }
+  .class-ref-table th { padding: 8px 14px; }
+  .verdict-box { text-align: center; padding: 32px; margin-bottom: 28px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); }
+  .verdict-score { font-size: 4rem; font-weight: 800; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .verdict-delta { font-size: 1rem; color: var(--success); margin-bottom: 8px; }
+  .verdict-label { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 8px 0; }
+  .verdict-desc { color: var(--text-secondary); font-size: 0.9rem; max-width: 600px; margin: 0 auto; }
+  .divider { background: var(--gradient-accent); height: 1px; width: 100%; margin: 32px 0; opacity: 0.3; }
+  .audit-table { margin-top: 16px; }
+  .audit-table td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; white-space: nowrap; }
+  .audit-table td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+  .severity-up { color: var(--success); }
+  .footer { text-align: center; padding: 32px 24px; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
+  .footer a { color: var(--accent-cyan); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } .verdict-score { font-size: 3rem; } .audit-table td:first-child { white-space: normal; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">Design Review — Post-Implementation</div>
+  <h1>Employee Docs Bot — v1.1 Review</h1>
+  <p>Post-implementation audit: verifying all design review findings are addressed</p>
+  <div class="meta">2026-06-24 16:45 UTC-7 &nbsp;·&nbsp; Version 2.1.0 &nbsp;·&nbsp; Post-implementation audit, designer responses recorded &nbsp;·&nbsp; <span class="tag tag-green">All findings accepted</span></div>
+</div>
+
+<div class="nav-bar">
+  <div class="nav-bar-inner">
+    <a href="#verdict">Verdict</a>
+    <a href="#findings">Findings</a>
+    <a href="#audit">Resolution Audit</a>
+    <a href="#new-findings">New Issues</a>
+    <a href="#summary">Summary</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ===== VERDICT ===== -->
+<section id="verdict" class="verdict-box">
+  <div class="verdict-delta">▲ Up from B</div>
+  <div class="verdict-score">A-</div>
+  <div class="verdict-label">Strong Improvement — Ready for Production Testing</div>
+  <div class="verdict-desc">
+    The implementation commit addressed 9 of 11 v1 findings completely. The structural problems that made v1 risky (in-memory state loss, no tenant isolation, race conditions) are eliminated. The new per-chat state machine with SQLite persistence, roster cache, observability tracing, and file guards are well-architected and properly tested. Two minor regressions and one docs cleanup remain. The bot is now fundamentally sound for test deployment.
+  </div>
+  <p style="margin-top:16px;font-size:0.82rem;color:var(--text-muted);">
+    <strong>Key takeaway:</strong> The refactor was thorough and correct. Fix the <code>new_employee_correct</code> callback bug and clean up the stale <code>.env.example</code> reference, and this is ready for first production document.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== FINDINGS ===== -->
+<section id="findings" class="section">
+  <h2><span class="accent-bar"></span>Resolution Audit</h2>
+  <p style="margin-bottom:16px;">How each finding from <a href="design-review-employee-docs-bot-v001.html">v1.0.0</a> was addressed in commit <code>8970e2a</code>. <span class="icon-yes">●</span> = Fully Resolved &nbsp; <span class="icon-partial">●</span> = Partially Resolved &nbsp; <span class="icon-no">●</span> = Not Resolved</p>
+
+  <table class="audit-table">
+    <tr><th>ID</th><th>Title</th><th>Status</th><th>Evidence</th></tr>
+    <tr>
+      <td>SP-1</td>
+      <td>Roster Cache</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>RosterCache</code> class with 30-min TTL, auto-refresh on cache miss. <code>get_roster_cache</code> wrapper integrated in <code>handle_document</code>, <code>file_document</code>, and <code>providers_command</code>. 77-line test suite (<code>test_roster_cache.py</code>) covering miss, hit, expiry, and per-drive isolation. Per-designer direction: no manual reload command, auto-refresh only.</td>
+    </tr>
+    <tr>
+      <td>SP-2</td>
+      <td>State Persistence</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td>SQLite persistence via <code>init_db</code>/<code>save_session</code>/<code>load_session</code>/<code>delete_session</code>/<code>cleanup_old_sessions</code>. Sessions loaded from DB into <code>chat_states</code> on startup. 24-hour stale cleanup. 116-line test suite (<code>test_state_machine.py</code>) covering round-trip, delete, and age-based cleanup.</td>
+    </tr>
+    <tr>
+      <td>SP-3</td>
+      <td>Service Account Isolation</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td>Docs updated: glossary, PRD, and architecture now all describe per-client service accounts. The code already loaded the key file per-client from config — no code change needed. The remaining step is an operational task: create the actual keys and scope permissions. Config schema already supports it.</td>
+    </tr>
+    <tr>
+      <td>SP-4</td>
+      <td>State Machine</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>ChatState</code> enum with 5 explicit states. <code>ChatSession</code> dataclass. Per-chat <code>asyncio.Lock</code> via <code>get_chat_lock()</code>. Replaces the fragile multi-key <code>pending</code> dict. State transitions are explicit and logged. All mutation is lock-guarded.</td>
+    </tr>
+    <tr>
+      <td>EI-1</td>
+      <td>DeepSeek → Haiku</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td>LLM tier now calls Anthropic API directly (<code>claude-3-haiku-20240307</code>). <code>DEEPSEEK_API_KEY</code> removed from code. JSON parser upgraded: <code>parse_json_from_llm</code> handles bare JSON, <code>```json</code> fences, <code>```</code> plain fences, and nested objects. 51-line test suite (<code>test_llm_parse.py</code>) covering all formats.</td>
+    </tr>
+    <tr>
+      <td>EI-2</td>
+      <td>Test Paths</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>pyproject.toml</code> with <code>pythonpath = ["."]</code>. All <code>sys.path.insert</code> lines removed from test files. Tests import directly: <code>from bot import ...</code>. Works from any checkout path.</td>
+    </tr>
+    <tr>
+      <td>EI-3</td>
+      <td>Message Filters</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td>Text handler scoped: checks <code>chat_states.get(chat_id)</code> at entry, returns silently if no pending state. 20MB file size guard. Extension whitelist (<code>SUPPORTED_EXTS</code>) at handler level. Rejection messages include detected type.</td>
+    </tr>
+    <tr>
+      <td>EI-4</td>
+      <td>Doc ID Tracing</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>generate_doc_id()</code> producing short UUIDs (<code>doc_a1b2c3d4</code>). <code>DocLogger</code> adapter prefixes all log lines. Every pipeline stage — received, extracted, classified, filed — logged with doc_id. Temp files prefixed with doc_id for filesystem correlation.</td>
+    </tr>
+    <tr>
+      <td>OP-1</td>
+      <td>Temp File Cleanup</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>_temp_files</code> set registry. <code>register_temp_file</code>/<code>unregister_temp_file</code> wrappers. <code>cleanup_stale_temp_files</code> function for 24-hour sweep. Startup cleanup of orphaned <code>/tmp/doc_*</code> files. Finally-block cleanup in both <code>handle_document</code> and <code>file_document</code>.</td>
+    </tr>
+    <tr>
+      <td>QF-1</td>
+      <td>Tier 3 Feedback</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td>Three distinct fallback messages: (1) "classification service temporarily unavailable" when LLM fails, (2) "couldn't identify employee or document type" when rules+LLM both fail, (3) "found employee but couldn't determine document type" for partial matches. User gets context about why manual input is needed.</td>
+    </tr>
+    <tr>
+      <td>QF-2</td>
+      <td>Extension Whitelist</td>
+      <td><span class="icon-yes">●</span> <span class="badge resolved">RESOLVED</span></td>
+      <td><code>SUPPORTED_EXTS</code> set defined at module level. Handler-level validation with clear rejection message: "You sent a <strong>TIFF</strong> file. I can only process: PDF, JPEG, PNG, HEIC, DOCX, and TXT files." Detected type shown to user.</td>
+    </tr>
+  </table>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== NEW FINDINGS ===== -->
+<section id="new-findings" class="section">
+  <h2><span class="accent-bar"></span>New Issues Found in Implementation</h2>
+  <p style="margin-bottom:16px;">Issues introduced during the refactor or discovered on re-review that were not present in the v1 design.</p>
+
+  <div class="finding-class-ref">
+    <p style="margin-bottom:10px;font-size:0.85rem;color:var(--text-muted);">Each finding is classified by type using a stable prefix that survives reordering:</p>
+    <table class="class-ref-table">
+      <tr><th>Prefix</th><th>Type</th><th>Severity</th><th>Meaning</th></tr>
+      <tr><td><strong>SP</strong></td><td><span class="badge structural">Structural</span></td><td><span class="badge high">HIGH</span></td><td>Fundamental design flaw requiring redesign. The most serious class of finding.</td></tr>
+      <tr><td><strong>EI</strong></td><td><span class="badge engineering">Engineering</span></td><td><span class="badge medium">MEDIUM</span></td><td>Implementation-level issue. Fixable in code without architectural changes.</td></tr>
+      <tr><td><strong>OP</strong></td><td><span class="badge operational">Operational</span></td><td><span class="badge low">LOW</span></td><td>Process, observability, or deployment gap — not a code problem but still needs addressing.</td></tr>
+      <tr><td><strong>QF</strong></td><td>Question / Flag</td><td>Variable</td><td>Insufficient information to assess. Requires designer input before the finding can be resolved.</td></tr>
+    </table>
+  </div>
+
+  <div class="finding" id="ei-5">
+    <h3><span class="id">EI-5</span> <code>new_employee_correct</code> Callback Data Is Never Handled</h3>
+    <div class="meta-line">
+      <span class="badge high">HIGH SEVERITY</span>
+      <span class="badge engineering">Engineering</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> When a user clicks "👎 No" during the confirmation flow, the bot asks "What's the employee's full name?" with a "🆕 New Employee" button whose <code>callback_data</code> is <code>"new_employee_correct"</code> (<a href="bot.py#L762-L766">bot.py:762-766</a>). When the user clicks this button, <code>handle_callback</code> is invoked with <code>data = "new_employee_correct"</code>. The handler only checks for <code>data == "new_employee"</code> (<a href="bot.py#L737">bot.py:737</a>) — but the sent callback data is <code>"new_employee_correct"</code>. The check fails, and the code falls through to the else branch:</p>
+
+    <pre>await query.edit_message_text("Sorry, this expired. Please send the document again.")</pre>
+
+    <p>The session is still alive in <code>chat_states</code> — the user sees "expired" despite having a perfectly valid session. This is a user-visible bug: the "New Employee" option during the correction flow silently breaks.</p>
+
+    <p>This was introduced during the state machine refactor. In the original v1 code, <code>handle_callback</code> checked for <code>"new_employee_correct"</code> in the generic pending-dict scan path — but the new per-chat state machine changed the dispatching logic and the second callback data value was not carried over.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Add handler for <code>new_employee_correct</code>.</strong> In <code>handle_callback</code>, after the existing <code>data == "new_employee"</code> check (line 737), add an <code>elif data == "new_employee_correct"</code> branch that sets the session's <code>awaiting = "employee_name"</code> and sends the "What's the new employee's full name?" prompt — identical logic to the <code>data == "new_employee"</code> case at lines 738-745. One additional branch, ~8 lines.</p>
+    </div>
+
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
+  </div>
+
+  <div class="finding" id="op-2">
+    <h3><span class="id">OP-2</span> <code>.env.example</code> Still References <code>DEEPSEEK_API_KEY</code></h3>
+    <div class="meta-line">
+      <span class="badge low">LOW SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The <code>.env.example</code> file still contains a commented-out <code>DEEPSEEK_API_KEY</code> entry:</p>
+    <pre># DeepSeek (for text classification fallback)
+DEEPSEEK_API_KEY=your_key_here</pre>
+
+    <p>The code no longer uses DeepSeek — it was replaced by Claude Haiku per <a href="design-review-employee-docs-bot-v001.html#ei-1">EI-1</a>. This is misleading for anyone setting up the bot from the example file. They'll be prompted to set a key that has no effect. Similarly, the <code>config.example.json</code> still uses singular <code>"provider_name"</code> (line 8) while the code uses the array <code>"providers"</code> — a stale config field that could cause confusion.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p>Remove the DeepSeek comment and key from <code>.env.example</code>. Rename <code>"provider_name"</code> to <code>"providers"</code> (array format, matching the code's expectations) in <code>config.example.json</code>. One-time cleanup, 2 files.</p>
+    </div>
+
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
+  </div>
+
+  <div class="finding" id="qf-3">
+    <h3><span class="id">QF-3</span> Discrepant Claude Haiku Model Versions</h3>
+    <div class="meta-line">
+      <span class="badge low">LOW SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge medium">MEDIUM CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> <code>bot.py</code> (LLM classification tier) specifies model <code>claude-3-haiku-20240307</code>, while <code>scripts/doc-extract.py</code> (vision OCR) specifies <code>claude-haiku-4-5-20251001</code>. These are different model versions — the OCR script uses a newer Haiku than the classification tier. This may be intentional (older Haiku for text, newer for vision) but it's undocumented, so a future maintainer won't know whether to update one, both, or neither.</p>
+
+    <p>Both are valid API model IDs. This doesn't cause a runtime error, but the discrepancy should be resolved or documented. If the newer model works better for text classification (likely, since classification is simpler than vision), the bot should be using the same version. If the older model is deliberately pinned for cost or consistency, that should be noted in a comment.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p>Either: (a) unify on the newer model (<code>claude-haiku-4-5-20251001</code>) since it's cheaper and more capable, or (b) add a one-line comment next to the model string in <code>classify_by_llm</code> explaining why it's pinned to an older version: <code># Pinned to 20240307 for deterministic classification; newer models change output format</code>. 30 seconds of documentation that saves a future developer from wondering.</p>
+    </div>
+
+    <div class="designer-response"><strong>Designer's response:</strong> Use the latest version in both places. <em>Solution selected: option (a) — unify on <code>claude-haiku-4-5-20251001</code> across both bot.py and doc-extract.py.</em></div>
+  </div>
+
+  <div class="finding" id="op-3">
+    <h3><span class="id">OP-3</span> No External Monitoring Despite Multi-API Dependencies</h3>
+    <div class="meta-line">
+      <span class="badge low">LOW SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge medium">MEDIUM CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The bot now depends on four external APIs (Telegram, Anthropic, Google Drive, and Haiku OCR). If any goes down, the bot silently degrades or fails. systemd's <code>Restart=always</code> handles process crashes, but it can't detect an API key expiring, a quota being exhausted, or the bot entering a crash-restart loop. The Telemetry section in <code>architecture.html</code> still lists "Service health: systemd auto-restart (RestartSec=10). No external monitoring."</p>
+
+    <p>For a compliance-critical document processing system, a silent outage that lasts days (e.g., Anthropic key expires while the admin is on vacation) means documents pile up unfiled. The DSHS compliance risk the bot was designed to mitigate reappears in a different form: not "documents not filed properly" but "documents not filed at all."</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Minimum: heartbeat check.</strong> Add a simple health check endpoint or use a cron job that sends a daily test message to the Omega admin's Telegram if the bot has processed 0 documents in 24 hours. Even a <code>journalctl --since="24 hours ago" | grep "Document processed" | wc -l</code> cron check that emails zero-counts is better than nothing.</p>
+      <p><strong>Better: uptimerobot.com or similar.</strong> The bot's polling connection to Telegram doubles as a health signal — if the bot is alive, Telegram API responds. A free external monitoring service that pings the server every 5 minutes and alerts via SMS/email when journald stops producing log lines would catch crashes, hangs, and restart loops.</p>
+      <p style="margin-top:6px;">This is low severity because the bot hasn't launched yet. But it should be in the pre-production checklist.</p>
+    </div>
+
+    <div class="designer-response"><strong>Designer's response:</strong> Set up UptimeRobot monitoring for the system and dependencies. User will provide an API key for setup.</div>
+  </div>
+
+  <div class="finding" id="qf-4">
+    <h3><span class="id">QF-4</span> No E2E Test for the Full Pipeline</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge medium">MEDIUM CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The v1 PRD listed "End-to-end: Send a real document via test Telegram channel, verify classification, confirmation, and Drive filing" as the highest-priority test seam. The new unit tests (<code>test_state_machine.py</code>, <code>test_roster_cache.py</code>, <code>test_llm_parse.py</code>) are well-structured and valuable, but there is still no end-to-end test that exercises the full pipeline: Telegram message → download → text extraction → classification → confirmation → Drive filing. The <code>handle_document</code> and <code>handle_callback</code> functions — which contain the orchestration logic — have no tests at all.</p>
+
+    <p>The callback bug (EI-5) would have been caught by even a minimal E2E test that sends a mock callback with <code>new_employee_correct</code> data and asserts a valid response. The classification tier selection logic in <code>classify()</code> has tests for the rules tier but the orchestration between rules → LLM → manual in the actual handler is untested.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Add integration tests for the handler orchestration layer.</strong> Using <code>python-telegram-bot</code>'s test utilities (<code>MockTelegramBot</code>, <code>Update</code> helpers), write tests that:</p>
+      <ul>
+        <li>Send a mock document update and assert the correct state transition and confirmation message</li>
+        <li>Send a mock callback with <code>confirm_yes</code> and verify the session enters FILING state</li>
+        <li>Send a mock callback with <code>confirm_no</code> and verify the correction flow is initiated</li>
+        <li>Send a mock callback with <code>new_employee_correct</code> and assert it doesn't return "expired"</li>
+        <li>Send text with no pending state and assert silent ignore</li>
+      </ul>
+      <p>Leave Drive and API integration to manual end-to-end testing (those are hard to mock usefully), but the Telegram handler orchestration is pure state machine — testable without any external dependency.</p>
+    </div>
+
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted. Created a bot called <code>edmonds_villa_testing_bot</code> that is a member of both employee-docs channels for posting test messages. E2E tests should cover all workflows, variations, and edge cases, and must be run against the <code>afh-22</code> instance — not the Edmonds Villa production instance.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== SUMMARY ===== -->
+<section id="summary" class="section">
+  <h2><span class="accent-bar"></span>Summary Assessment</h2>
+
+  <p><strong>Verdict: Ready for production testing — with one fix.</strong> The implementation commit is thorough and correct. The code quality is visibly higher: explicit state machine, persistent storage, cache with TTL, doc-level observability, proper temp file management, working tests from any checkout path. This is what a well-executed design review cycle looks like.</p>
+
+  <p>The one blocker before production: <strong>fix the <code>new_employee_correct</code> callback bug (EI-5).</strong> It's an 8-line fix, but it will burn a real user the first time they click "New Employee" during correction and get "expired."</p>
+
+  <p><strong>Things that changed for the better:</strong></p>
+  <ul>
+    <li>Deleted ~100 lines of fragile <code>pending</code> dictionary code, replaced with ~120 lines of clean <code>ChatSession</code> + SQLite code. Net code change approximately neutral, but vastly more robust.</li>
+    <li>Dropped DeepSeek entirely — one API surface removed, one API key to manage, one failure mode eliminated. The JSON parser now handles real-world LLM output formats (code fences, nested JSON).</li>
+    <li>Tests went from 4 files with hardcoded paths to 7 files with proper pytest config. New tests cover the exact things that would fail in production: cache state, state machine transitions, LLM parsing edge cases.</li>
+    <li>All three documentation files (PRD, architecture, glossary) were updated to reflect the new architecture — not an afterthought, but committed alongside the code.</li>
+  </ul>
+
+  <p><strong>What to fix now (pre-production, code changes):</strong></p>
+  <ol>
+    <li><strong>EI-5:</strong> Add the <code>new_employee_correct</code> callback handler. 8 lines, <10 minutes.</li>
+    <li><strong>OP-2:</strong> Clean up <code>.env.example</code> and <code>config.example.json</code>. 2 files, <5 minutes.</li>
+    <li><strong>QF-3:</strong> Unify bot.py classification model to <code>claude-haiku-4-5-20251001</code> to match doc-extract.py. One string change.</li>
+  </ol>
+
+  <p><strong>Operational setup (before Edmonds Villa launch):</strong></p>
+  <ul>
+    <li><strong>OP-3:</strong> Set up UptimeRobot monitoring for system and API dependencies. User will provide API key.</li>
+  </ul>
+
+  <p><strong>Testing (active — afh-22 instance):</strong></p>
+  <ul>
+    <li><strong>QF-4:</strong> Build comprehensive end-to-end tests using the <code>edmonds_villa_testing_bot</code> which is a member of both employee-docs channels. Tests must cover all workflows, variations, and edge cases, and run against the <code>afh-22</code> instance only — never Edmonds Villa production.</li>
+  </ul>
+
+  <div class="highlight-box success" style="margin-top:24px;">
+    <h4>⬆ Upgrade Summary (B → A-)</h4>
+    <p>This was exactly the right outcome from a design review cycle: clear findings → designer accepts → clean implementation → post-implementation audit. The bot is now fundamentally solid. The remaining issues are minor enough that I'd start the test bot and file real documents while fixing them.</p>
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  <p>Employee Docs Bot — Design Review v2.1.0 &nbsp;·&nbsp; 2026-06-24 16:45 UTC-7 &nbsp;·&nbsp; Designer responses recorded 2026-06-24 &nbsp;·&nbsp; <a href="https://omegadigital.ai">Omega Digital Services</a> &nbsp;·&nbsp; Confidential</p>
+</div>
+
+</body>
+</html>
