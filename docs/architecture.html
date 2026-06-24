@@ -249,8 +249,7 @@ WantedBy=multi-user.target</pre>
     <tr><th>Dependency</th><th>Purpose</th><th>Auth Method</th></tr>
     <tr><td>Telegram Bot API</td><td>Receive messages, send replies, download files</td><td>Bot token in <code>.env</code></td></tr>
     <tr><td>Google Drive API v3</td><td>List folders, create folders, upload files</td><td>Service account JSON key</td></tr>
-    <tr><td>Anthropic Claude API (Haiku)</td><td>Vision OCR for scanned PDFs and images</td><td><code>ANTHROPIC_VISION_API_KEY</code></td></tr>
-    <tr><td>DeepSeek Chat API</td><td>LLM classification fallback</td><td><code>DEEPSEEK_API_KEY</code></td></tr>
+    <tr><td>Anthropic Claude API (Haiku 4.5)</td><td>Vision OCR + LLM classification</td><td><code>ANTHROPIC_VISION_API_KEY</code></td></tr>
     <tr><td>PyMuPDF</td><td>Render PDF pages for vision OCR</td><td>—</td></tr>
     <tr><td>PyPDF2</td><td>Extract text from digital PDFs</td><td>—</td></tr>
     <tr><td>Pillow + pillow-heif</td><td>HEIC/HEIF to JPEG conversion</td><td>—</td></tr>
@@ -292,7 +291,7 @@ WantedBy=multi-user.target</pre>
     <li><strong>Logging:</strong> Python <code>logging</code> at INFO level to journald. View: <code>journalctl -u employee-docs-bot -f</code>.</li>
     <li><strong>Failed classifications:</strong> Logged at WARNING with error and document metadata.</li>
     <li><strong>Drive errors:</strong> Caught and reported to the user via Telegram + logged.</li>
-    <li><strong>Service health:</strong> systemd auto-restart (RestartSec=10). No external monitoring.</li>
+    <li><strong>Service health:</strong> systemd auto-restart (RestartSec=10). External monitoring via UptimeRobot (pings every 5 min, SMS/email alerts).</li>
   </ul>
 </div>
 

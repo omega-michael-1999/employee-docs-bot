@@ -5,17 +5,7 @@
       "name": "Edmonds Villa",
       "drive_root_id": "1V-pKZ5-MEHJLlw6ZqHTB6zuapULJ9XOK",
       "service_account_key_file": ".service-account-keys/edmonds-villa-sa.json",
-      "provider_name": "Sandra Namwase",
-      "categories": [
-        "01 - Identity & Employment",
-        "02 - Background Check",
-        "03 - Health Screening",
-        "04 - CPR & First Aid",
-        "05 - Orientation & Training",
-        "06 - HCA Certification & CE",
-        "07 - Nurse Delegation",
-        "08 - Administrator Training"
-      ],
+      "providers": ["Sandra Namwase"],
       "cat_keywords": {
         "01 - Identity & Employment": ["id", "driver", "license", "passport", "i-9", "w-4", "ssn", "application", "picture", "photo", "work permit"],
         "02 - Background Check": ["background", "dshs", "fingerprint", "authorization", "disclosure"],

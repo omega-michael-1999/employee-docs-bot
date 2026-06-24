@@ -471,7 +471,7 @@ Document text:
 {text[:3000]}"""
 
     payload = json.dumps({
-        "model": "claude-3-haiku-20240307",
+        "model": "claude-haiku-4-5-20251001",
         "max_tokens": 300,
         "messages": [{"role": "user", "content": prompt}]
     })
@@ -731,27 +731,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("Sorry, this expired. Please send the document again.")
             return
 
-        # If the session has a message_id, verify it matches
-        if session.message_id and session.message_id != msg_id:
-            # Check if this is a string-keyed callback (new_employee button on the prompt message)
-            if data == "new_employee":
-                session.awaiting = "employee_name"
-                session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
-                chat_states[chat_id] = session
-                save_session(DB_PATH, session)
-                await query.edit_message_text(
-                    "What's the new employee's full name? Example: John Smith, CNA"
-                )
-                return
-            await query.edit_message_text("Sorry, this expired. Please send the document again.")
-            return
-
         if data == "confirm_yes":
             session.state = ChatState.FILING
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
-            # Release lock before file_document (it does I/O)
-            # file_document will manage the lock itself
             await file_document(query, session)
 
         elif data == "confirm_no":
@@ -764,6 +747,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("🆕 New Employee", callback_data="new_employee_correct")
                 ]])
+            )
+
+        elif data in ("new_employee", "new_employee_correct"):
+            # Both the initial "New Employee" button and the correction-flow
+            # "New Employee" button lead to the same name-prompt flow.
+            session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
+            session.awaiting = "employee_name"
+            chat_states[chat_id] = session
+            save_session(DB_PATH, session)
+            await query.edit_message_text(
+                "What's the new employee's full name? Example: John Smith, CNA"
             )
 
         else:
