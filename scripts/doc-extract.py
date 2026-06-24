@@ -67,10 +67,24 @@ def main():
         print("ERROR: No extraction method succeeded")
 
 
+_NOISE_WORDS = {"camscanner", "scanned by camscanner", "camscanner.com", "powered by camscanner"}
+
+
+def _is_noise_text(text: str) -> bool:
+    """Check if extracted text is just scanner watermark noise."""
+    stripped = text.strip().lower()
+    if len(stripped) < 50:
+        return True  # Too short to be meaningful
+    for noise in _NOISE_WORDS:
+        if noise in stripped:
+            return True
+    return False
+
+
 def extract_pdf(path, prompt):
-    """Try PyPDF2 first; if empty (scanned), use vision OCR."""
+    """Try PyPDF2 first; if empty or noise-only (scanned), use vision OCR."""
     text = extract_pdf_text(path)
-    if text and text.strip():
+    if text and text.strip() and not _is_noise_text(text):
         return f"METHOD: PDF text extraction (PyPDF2)\n\n--- EXTRACTED TEXT ---\n{text.strip()}"
     # Scanned PDF — render pages and OCR
     return extract_scanned_pdf(path, prompt)

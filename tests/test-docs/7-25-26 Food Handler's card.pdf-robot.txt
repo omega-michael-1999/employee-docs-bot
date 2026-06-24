@@ -1,1 +1,19 @@
-CamScanner
+# Washington State Food Worker Card - Text Extraction
+
+**Header:**
+- Tacoma-Pierce County Health Department
+- "Healthy People in Healthy Communities"
+- Washington State Food Worker Card
+
+**Card Details:**
+- **Name:** NICHOLAS KACHU KHAMALI
+- **Title:** Health Officer
+- **Organization:** Tacoma-Pierce County Health Department
+- **Valid from:** 07/25/2024 to 07/25/2026
+- **Card Number:** 1567N345Y2101K26
+
+**Additional Elements:**
+- Signature field (marked as "(signature)")
+- Health Officer's signature (handwritten)
+- QR code (bottom right)
+- CS CamScanner logo (bottom right corner)

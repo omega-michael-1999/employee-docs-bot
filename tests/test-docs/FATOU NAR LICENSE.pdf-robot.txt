@@ -1,19 +1,29 @@
 # Washington State Department of Health - Nursing Assistant Registration
 
-**Credential Holder:** Fatou Manneh
+**Credential Holder:**
+- Name: Fatou Hannah
 
-**Credential Type:** Nursing Assistant Registration
+**Credential Type:**
+- Nursing Assistant Registration
 
-**Status:** Active
+**Status:**
+- Active
 
-**Credential Number:** NAR.NA.60097072
+**Credential Number:**
+- NAR.NA.60097072
 
-**Effective Date:** 07/17/2025
+**Dates:**
+- Effective Date: 07/17/2025
+- Initial Issuance: 07/13/2009
+- Expiration Date: 07/16/2026
 
-**Initial Issuance:** 07/13/2009
+**Authority:**
+- Chapter 18.88A RCW
 
-**Expiration Date:** 07/16/2026
+**Document Type:**
+- Personal Copy of Your Credential
 
-**Website:** vadoh.app.box.com
-
-**Additional Notes:** Personal copy of credential issued by Washington State Department of Health under authority of Chapter 18.88A RCW
+**Additional Information:**
+- Secretary signature present
+- Renewal processing time: approximately two weeks by mail
+- Warning: Service without current license is a violation subject to disciplinary action

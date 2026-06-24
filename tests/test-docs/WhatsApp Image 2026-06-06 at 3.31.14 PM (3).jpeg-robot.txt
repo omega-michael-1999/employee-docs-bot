@@ -1,14 +1,16 @@
-# Certificate Text Extraction
+# Certificate Details
 
 **Recipient:** PHILOMENA JOSEPH RENAUX
 
-**Certificate Type:** Nurse Delegation Core
+**Issuing Organization:** Washington State Department of Social & Health Services
+
+**Course Completed:** Nurse Delegation Core
 
 **Hours:** 9 Hours of DSHS approved
 
 **Instructor Name:** ANNE MWEI
 
-**Instructor Signature:** (Signed - illegible)
+**Instructor Signature:** Signed
 
 **Date:** 04/02/2025
 
@@ -16,6 +18,4 @@
 
 **Training Program Number:** WA753540
 
-**Issuing Agency:** Washington State Department of Social & Health Services
-
-**Document Revision Date:** Revised 3/2017
+**Document Version:** Revised 3/2017

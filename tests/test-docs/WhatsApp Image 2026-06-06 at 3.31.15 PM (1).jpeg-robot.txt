@@ -1,23 +1,22 @@
-# Food Handler Solutions Certificate
+# Food Handler Certificate - Text Extraction
 
-**Recipient:** Philomena Renaux
+**Certificate Details:**
+- **Recipient:** Philomena Renaux
+- **Course:** Food Handler Course
+- **Certificate Number:** F280175
+- **Issue Date:** April 2, 2025
+- **Expiration Date:** April 2, 2028
 
-**Course:** Food Handler Course
+**Issuing Authority:**
+- **Signatory:** Westley Christian, Chief Executive Officer
+- **Organization:** Food Handler Solutions, LLC
+- **Accreditation:** ANSI National Accreditation Board (ANAB)
+- **Accreditation #:** 1210
+- **Website:** www.FoodHandlerSolutions.com
+- **Phone:** (949) 468-6001
 
-**Certificate Number:** F280175
+**Description:**
+"Congratulations! You completed and successfully passed the Food Handler Course. The scope is the set of core competencies needed to handle food."
 
-**Issue Date:** April 2, 2025
-
-**Expiration Date:** April 2, 2028
-
-**Signatory:** Westley Christian, Chief Executive Officer
-
-**ANAB Accreditation Number:** 1210
-
-**Certificate Issuer:** Food Handler Solutions, LLC
-
-**Website:** www.FoodHandlerSolutions.com
-
-**Phone:** (949) 468-6001
-
-**Result:** Completed and successfully passed
+**Copyright Notice:**
+©2023 Food Handler Solutions, LLC - All rights reserved. This document may not be modified in whole or in part in any manner.

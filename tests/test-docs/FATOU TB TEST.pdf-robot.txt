@@ -22,10 +22,10 @@
 
 | Test Name | Result | Units | Normal Range | Status |
 |-----------|--------|-------|--------------|--------|
-| QUANTIFERON(R)-TB GOLD | NEGATIVE | | NEGATIVE | Final, Reviewed |
-| NIL | 0.36 | IU/mL | | Final, Reviewed |
-| ANTIGEN-NIL | >10.00 | IU/mL | | Final, Reviewed |
-| TB-NIL | 0.01 | IU/mL | | Final, Reviewed |
+| QUANTIFERON(R)-TB GOLD | NEGATIVE | — | NEGATIVE | Final, Reviewed |
+| NIL | 0.36 | IU/mL | — | Final, Reviewed |
+| ANTIGEN-NIL | >10.00 | IU/mL | — | Final, Reviewed |
+| TB-NIL | 0.01 | IU/mL | — | Final, Reviewed |
 
 ---
 
@@ -35,10 +35,10 @@
 
 **Test Performed at:** QUEST DIAGNOSTICS-SEATTLE, 1737 AIRPORT WAY, S. SUITE 200, SEATTLE, WA 98134-1636
 
-**Physician:** ROGER W GRAHAM, MD
+**Provider:** ROGER W GRAHAM, MD
 
 **Patient #:** 6249060
 
 **DOB:** 07/15/1976 (41 years)
 
-**Date of Report:** Monday, July 9, 2018
+**Report Date:** Monday, July 9, 2018

@@ -1,27 +1,26 @@
 # Certificate Text Extraction
 
-**Main Title:**
-THIS CERTIFICATE IS PRESENTED TO
+**Header:**
+- THIS CERTIFICATE IS PRESENTED TO
 
-**Recipient Information:**
-- Name: (Signature present)
-- Training Program Name: Metal Health Specialty Training
-- Meets requirements for: Mental Health Specialist
-- Meets requirements for Managed Medical Healthcare course
+**Main Seal:**
+- Seal of the United States of America with "Sea of Training" visible
 
-**Course Details:**
-- Signature of OSHS approved Instructor
-- 8 hours of OSHS approved
-- for successfully completing
+**Certificate Details:**
+- **Signature or Course:** Mental Health Specialist Training
+- **Meets requirements for:** Mental Health course
+- **Duration:** 8 hours of class approved
+- **Completion Status:** For successfully completing
+- **Course Name:** PHILOMENA JOSEPHREAUX
 
-**Program Information:**
-- Training Program Number: WAZ5407
-- Training Program Name: Caregiver Training and Haiduma Center
-- Part Name: MAUREEN MIRRIGI
-- Date: 3/27/2025
+**Date:** 3/27/2025
 
-**Seal/Emblem:**
-- Sea of Trial (official seal visible)
+**Part Name:** MAUREEN MARRENGUI
 
-**Document Date:**
-- Issued 3/30/07
+**Training Program Details:**
+- Training Program Name: Caregiver Training and Huckama Center
+- Training Program Number: WAM5407.4
+- Category: Caregiver Training and Huckama Center
+
+**Footer:**
+- Revised: 3/10/07

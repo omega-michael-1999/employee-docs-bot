@@ -1,14 +1,23 @@
-# Public Health Seattle & King County - Washington State Food Worker Card
+# Washington State Food Worker Card - Text Extraction
 
-**Name:** FATOU MANNER
+**Header:**
+- Public Health
+- Seattle & King County
+- Washington State Food Worker Card
 
-**Signature:** (handwritten signature present)
+**Name:**
+- FATOU MANNER
 
-**Title:** Health Officer
-Public Health Seattle & King County
+**Signature Line:**
+- (signature) - Health Officer
+- Public Health Seattle & King County
 
-**Valid from:** 07/24/2025 to 07/24/2027
+**Validity Period:**
+- Valid from 07/24/2025 to 07/24/2027
 
-**Card Number:** 1117F34V70601M27
+**ID Number:**
+- 1117F34V70601M27
 
-**QR Code:** Present (right side of card)
+**Additional Elements:**
+- QR code (bottom right)
+- Portrait photo (top right)

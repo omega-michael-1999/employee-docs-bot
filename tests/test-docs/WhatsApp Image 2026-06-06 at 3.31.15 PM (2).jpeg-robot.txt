@@ -1,21 +1,28 @@
-# Washington State Identification Card - Text Extraction
-
-**Header:**
-- WA USA WASHINGTON
-- IDENTIFICATION CARD
-- FEDERAL LIMITS APPLY
+# Washington Identification Card - Extracted Information
 
 **Card Details:**
-- License #: WDL24TB9F43B
-- Name: RENAUX PHILOMENA JOSEPH
+- State: Washington (WA, USA)
+- Card Type: Identification Card
+- Federal Limits Apply
+
+**Personal Information:**
+- Name: Philomena Joseph Renaux
 - DOB: 10/13/1981
-- Address: 808 27TH AVE UNIT B, MILTON WA 98354-8307
-- Sex: F
-- Height: 5'-06"
+- Sex: Female
+- Height: 5'06"
 - Weight: 198 lb
-- Eyes: BLK
-- Issue Date: 05/20/2025
-- Expiration Date: 10/13/2030
-- Document #: WDL24TB9F43BD05202517121
+- Eyes: Black
+
+**Address:**
+- 808 27th Ave Unit B
+- Milton, WA 98354-8307
+
+**Card Numbers:**
+- License #: WDL24TB9F43B
+- DD #: WDL24TB9F43B0052025171213
+- Document #: 09520871213
+
+**Dates:**
+- Issue Date (ISS): 05/20/2025
+- Expiration Date (EXP): 10/13/2030
 - Revision Date: 02/18/2025
-- Card Number: 20 09520617213
