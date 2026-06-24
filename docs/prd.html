@@ -16,10 +16,10 @@
   .header .badge { display: inline-block; background: rgba(14,165,233,0.15); color: #38BDF8; font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
   .header .meta { font-size: 0.82rem; color: #64748b; margin-top: 12px; position: relative; }
   .nav-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; position: sticky; top: 0; z-index: 10; }
-  .nav-bar-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar-inner { max-width: 960px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
   .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
   .nav-bar a:hover, .nav-bar a.active { color: #0284C7; border-bottom-color: #0284C7; }
-  .container { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
   .section { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; margin-bottom: 28px; }
   .section h2 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
   .section h2 .accent { display: inline-block; width: 4px; height: 24px; background: linear-gradient(180deg, #0284C7, #38BDF8); border-radius: 2px; }
@@ -39,7 +39,6 @@
   .tag { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; }
   .tag-green { background: #d1fae5; color: #065f46; }
   .tag-amber { background: #fef3c7; color: #92400e; }
-  .story-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: linear-gradient(135deg, #0284C7, #38BDF8); color: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
   .footer { text-align: center; padding: 32px 24px; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; }
   .footer a { color: #0284C7; text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
@@ -67,32 +66,32 @@
 
 <div class="section">
   <h2><span class="accent"></span>Problem Statement</h2>
-  <p>Sandra Namwase operates Edmonds Villa, an adult family home in Edmonds, WA. She maintains complete personnel files for ~16 employees against Washington State WAC 388-76 and 388-112A requirements. Employee documents (CPR cards, TB test results, background checks, training certificates) arrive as photos and PDFs via Telegram. Sandra manually classifies each document by employee and category, renames it, and uploads it to the correct Google Drive folder — taking 2–5 minutes per document. This is error-prone and creates backlog when documents arrive in batches.</p>
-  <p>The same problem exists for new AFH clients onboarding. Each client needs the same document filing workflow with their own Telegram channel and Drive folder. The solution must be multi-tenant from the start.</p>
+  <p>Adult family homes (AFHs) in Washington State must maintain complete personnel files for every employee against WAC 388-76 and 388-112A requirements. Employee documents (CPR cards, TB test results, background checks, training certificates) arrive as photos and PDFs via Telegram. The AFH administrator manually classifies each document by employee and category, renames it, and uploads it to the correct Google Drive folder — taking 2–5 minutes per document. This is error-prone and creates backlog when documents arrive in batches.</p>
+  <p>Omega Digital Services operates this bot as a multi-tenant service. Each AFH client gets their own Telegram channel, Drive folder, and bot token. New AFH clients are onboarded by the Omega Digital administrator — the bot's code and config are managed centrally.</p>
 </div>
 
 <div class="section">
   <h2><span class="accent"></span>Solution</h2>
-  <p>A Telegram bot that receives employee documents, automatically extracts text via OCR, classifies by employee name and WAC document category using a hybrid rules + LLM approach, confirms the classification with Sandra via inline buttons, and files to the correct Google Drive folder. Sandra's interaction: send photo → tap 👍 or 👎 → done.</p>
+  <p>A Telegram bot that receives employee documents, automatically extracts text via OCR, classifies by employee name and WAC document category using a hybrid rules + LLM approach, confirms the classification with the AFH administrator via inline buttons, and files to the correct Google Drive folder. The AFH administrator's interaction: send photo → tap 👍 or 👎 → done.</p>
 </div>
 
 <div class="section">
   <h2><span class="accent"></span>User Stories</h2>
   <ol>
-    <li><strong>As Sandra</strong>, I want to send a photo of a CPR card to a Telegram channel and have it automatically filed to the correct employee's CPR folder in Drive, so that I don't have to manually rename and upload each document.</li>
-    <li><strong>As Sandra</strong>, when the bot is uncertain about the employee or document type, I want to see a confirmation prompt with inline buttons, so that I can quickly correct any misclassification before filing.</li>
-    <li><strong>As Sandra</strong>, when the bot cannot identify the employee at all, I want to type the employee's name and document type, so that new or unrecognized staff documents still get filed correctly.</li>
-    <li><strong>As Sandra</strong>, when a document is for a new employee not yet in the Drive roster, I want the bot to create their folder structure automatically, so that I don't have to set up folders manually.</li>
-    <li><strong>As Sandra</strong>, I want the bot to work with HEIC photos from my iPhone, so that I can send documents directly from my camera without converting formats.</li>
-    <li><strong>As Sandra</strong>, I want to send multiple documents in sequence and have each one processed independently, so that batch filing is natural.</li>
-    <li><strong>As Sandra</strong>, when the bot makes a classification error, I want to correct it via a simple text conversation rather than editing Drive manually.</li>
-    <li><strong>As Sandra</strong>, I want the classified document to be filed with a companion <code>-robot.txt</code> containing the extracted text, so that the Drive is searchable and auditable.</li>
-    <li><strong>As an AFH owner onboarding a new client</strong>, I want to add a new client's Telegram chat ID and Drive folder to a config file, so that the same bot serves multiple AFHs without separate deployments.</li>
-    <li><strong>As an auditor</strong>, I want to run a compliance check against WAC 388-76 that knows which employees are providers (01–08 + facility docs) vs. caregivers (01–07 only), so that the audit respects regulatory differences.</li>
-    <li><strong>As Michael (operator)</strong>, I want the bot to run as a systemd service that auto-restarts on failure and logs to journald, so that it stays up without manual intervention.</li>
-    <li><strong>As Michael (operator)</strong>, I want classification to use rules for fast common cases and fall back to an LLM for ambiguous ones, so that accuracy is high without paying for an LLM call on every document.</li>
-    <li><strong>As Michael (operator)</strong>, I want the test and production clients as separate Telegram bot instances sharing the same config, so that testing doesn't interfere with live filing.</li>
-    <li><strong>As Michael (operator)</strong>, I want the deployment at <code>/opt/employee-docs-bot/</code> as a git checkout owned by my user, so that I can browse, edit, and git pull without permission hassles.</li>
+    <li><strong>As an AFH administrator</strong>, I want to send a photo of a CPR card to a Telegram channel and have it automatically filed to the correct employee's CPR folder in Drive, so that I don't have to manually rename and upload each document.</li>
+    <li><strong>As an AFH administrator</strong>, when the bot is uncertain about the employee or document type, I want to see a confirmation prompt with inline buttons, so that I can quickly correct any misclassification before filing.</li>
+    <li><strong>As an AFH administrator</strong>, when the bot cannot identify the employee at all, I want to type the employee's name and document type, so that new or unrecognized staff documents still get filed correctly.</li>
+    <li><strong>As an AFH administrator</strong>, when a document is for a new employee not yet in the Drive roster, I want the bot to create their folder structure automatically, so that I don't have to set up folders manually.</li>
+    <li><strong>As an AFH administrator</strong>, I want the bot to work with HEIC photos from my iPhone, so that I can send documents directly from my camera without converting formats.</li>
+    <li><strong>As an AFH administrator</strong>, I want to send multiple documents in sequence and have each one processed independently, so that batch filing is natural.</li>
+    <li><strong>As an AFH administrator</strong>, when the bot makes a classification error, I want to correct it via a simple text conversation rather than editing Drive manually.</li>
+    <li><strong>As an AFH administrator</strong>, I want the classified document to be filed with a companion <code>-robot.txt</code> containing the extracted text, so that the Drive is searchable and auditable.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want to add a new AFH client's Telegram chat ID and Drive folder to a config file, so that the same bot serves multiple AFHs without separate deployments.</li>
+    <li><strong>As an AFH administrator</strong>, I want to run a compliance check against WAC 388-76 that knows which employees are providers (01–08 + facility docs) vs. caregivers (01–07 only), so that the audit respects regulatory differences.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want the bot to run as a systemd service that auto-restarts on failure and logs to journald, so that it stays up without manual intervention.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want classification to use rules for fast common cases and fall back to an LLM for ambiguous ones, so that accuracy is high without paying for an LLM call on every document.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want the test and production clients as separate Telegram bot instances sharing the same config, so that testing doesn't interfere with live filing.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want the deployment at <code>/opt/employee-docs-bot/</code> as a git checkout owned by my user, so that I can browse, edit, and git pull without permission hassles.</li>
   </ol>
 </div>
 
@@ -102,7 +101,7 @@
   <h3>Architecture</h3>
   <ul>
     <li><strong>Single bot binary, one systemd instance per token.</strong> The same <code>bot.py</code> and <code>config.json</code> are shared. Each instance reads its own <code>.env</code> with a different <code>TELEGRAM_BOT_TOKEN</code>. Chat ID routing in <code>config.json</code> distinguishes clients.</li>
-    <li><strong>Multi-tenant from day one.</strong> <code>config.json</code> contains an array of client objects. No code changes needed to add a client.</li>
+    <li><strong>Multi-tenant from day one.</strong> <code>config.json</code> contains an array of client objects. No code changes needed to add a client. The Omega Digital administrator onboards new clients.</li>
     <li><strong>Shared Google service account.</strong> One SA key with Editor access to all client Drive folders. Folder-level permissions control isolation.</li>
   </ul>
 

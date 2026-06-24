@@ -15,10 +15,10 @@
   .header p { font-size: 1.05rem; color: #94a3b8; font-weight: 400; position: relative; }
   .header .badge { display: inline-block; background: rgba(14,165,233,0.15); color: #38BDF8; font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
   .nav-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; position: sticky; top: 0; z-index: 10; }
-  .nav-bar-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar-inner { max-width: 960px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
   .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
   .nav-bar a:hover, .nav-bar a.active { color: #0284C7; border-bottom-color: #0284C7; }
-  .container { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
   .section { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; margin-bottom: 28px; }
   .section h2 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
   .section h2 .accent { display: inline-block; width: 4px; height: 24px; background: linear-gradient(180deg, #0284C7, #38BDF8); border-radius: 2px; }
@@ -29,15 +29,19 @@
   td:first-child { font-weight: 600; color: #0f172a; white-space: nowrap; }
   code { background: #f1f5f9; color: #0284C7; padding: 2px 8px; border-radius: 6px; font-size: 0.82em; font-family: 'JetBrains Mono', 'SF Mono', monospace; }
   .tag-provider { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; margin-left: 4px; }
-  .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-  .cat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
-  .cat-code { font-size: 1.5rem; font-weight: 800; color: #0284C7; line-height: 1; min-width: 36px; }
-  .cat-name { font-size: 0.9rem; font-weight: 500; color: #1e293b; }
-  .cat-note { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+  .cat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+  .cat-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .cat-code { font-size: 1.5rem; font-weight: 800; color: #0284C7; line-height: 1; }
+  .cat-name { font-size: 1rem; font-weight: 600; color: #0f172a; }
+  .cat-docs { padding-left: 48px; }
+  .cat-docs li { font-size: 0.85rem; color: #475569; margin-bottom: 4px; }
+  .cat-docs li::marker { color: #94a3b8; }
+  .compliance-link { display: inline-flex; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px 18px; margin: 8px 0; color: #0369a1; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: all 0.15s; }
+  .compliance-link:hover { background: #e0f2fe; border-color: #38BDF8; }
   .footer { text-align: center; padding: 32px 24px; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; }
   .footer a { color: #0284C7; text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
-  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } td:first-child { white-space: normal; } .cat-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } td:first-child { white-space: normal; } }
 </style>
 </head>
 <body>
@@ -45,7 +49,7 @@
 <div class="header">
   <div class="badge">Reference</div>
   <h1>Employee Docs Bot — Glossary</h1>
-  <p>Domain terms, architecture decisions, and WAC category reference</p>
+  <p>Domain terms, architecture decisions, WAC category document reference</p>
 </div>
 
 <div class="nav-bar">
@@ -62,10 +66,12 @@
   <h2><span class="accent"></span>Domain Terms</h2>
   <table>
     <tr><th>Term</th><th>Definition</th></tr>
-    <tr><td>Client</td><td>An adult family home (AFH) using the bot. Each has its own Telegram chat and Google Drive folder. Config-driven in <code>config.json</code>.</td></tr>
+    <tr><td>Client</td><td>An adult family home (AFH) using the bot. Each client has its own Telegram chat, Google Drive folder, and config entry in <code>config.json</code>.</td></tr>
+    <tr><td>AFH Administrator</td><td>The primary human user at the AFH facility who sends documents to the bot and confirms classifications via inline buttons. The bot's confirmation flow is designed around their phone-based workflow. Each client has at least one AFH administrator (e.g., Sandra Namwase at Edmonds Villa).</td></tr>
+    <tr><td>Omega Digital Administrator</td><td>The operator of this bot. Owns the deployment, manages the server, onboards new clients by adding their config and creating their Telegram bot token. Interacts with the bot via systemd, git, and the filesystem rather than the Telegram interface.</td></tr>
     <tr><td>Document</td><td>A single file sent to the Telegram channel — photo, PDF, or DOCX. Each processed independently even if sent in a batch.</td></tr>
-    <tr><td>Sandra</td><td>Primary human user. The bot's confirmation flow is designed around her phone-based workflow.</td></tr>
     <tr><td>New Employee</td><td>A name detected in a document that doesn't match any folder in the client's Drive roster. Triggers automatic folder creation and onboarding flow.</td></tr>
+    <tr><td>Compliance Guide</td><td>A public reference page explaining WAC 388-76 and 388-112A personnel record requirements for AFHs. Useful for understanding what documents are required and common DSHS citation patterns. <a href="https://seattleassistedlivingfacilitynetwork.com/afh-employee-paperwork-compliance/" class="compliance-link" target="_blank">→ View Compliance Guide</a></td></tr>
   </table>
 </div>
 
@@ -80,22 +86,103 @@
     <tr><td>Confirmation UX</td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts.</td></tr>
     <tr><td>Employee Roster</td><td>Scanned from Drive folder names at runtime. Providers flagged in <code>config.json</code> for audit.</td></tr>
     <tr><td>Provider vs. Caregiver</td><td>No structural folder split. Config marks providers (<code>"providers": ["Sandra Namwase"]</code>). Audit checks 01–08 + facility docs for providers, 01–07 for caregivers.</td></tr>
-    <tr><td>Multi-Tenancy</td><td>Single bot binary. Client config in <code>config.json</code> keyed by Telegram chat_id.</td></tr>
+    <tr><td>Client Onboarding</td><td>Omega Digital administrator adds a new client entry to <code>config.json</code> with their Telegram chat ID and Drive root folder ID. Each client gets their own Telegram bot token and systemd instance.</td></tr>
   </table>
 </div>
 
 <div class="section">
-  <h2><span class="accent"></span>WAC Categories</h2>
-  <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Washington Administrative Code chapters 388-76 and 388-112A define 8 document categories for AFH personnel records.</p>
-  <div class="cat-grid">
-    <div class="cat-card"><div class="cat-code">01</div><div><div class="cat-name">Identity &amp; Employment</div><div class="cat-note">Photo ID, W-2, I-9, application</div></div></div>
-    <div class="cat-card"><div class="cat-code">02</div><div><div class="cat-name">Background Check</div><div class="cat-note">WA name/DOB + national fingerprint</div></div></div>
-    <div class="cat-card"><div class="cat-code">03</div><div><div class="cat-name">Health Screening</div><div class="cat-note">TB test within 3 days of hire</div></div></div>
-    <div class="cat-card"><div class="cat-code">04</div><div><div class="cat-name">CPR &amp; First Aid</div><div class="cat-note">Valid certs required</div></div></div>
-    <div class="cat-card"><div class="cat-code">05</div><div><div class="cat-name">Orientation &amp; Training</div><div class="cat-note">70-hr basic training, HCA, specialty</div></div></div>
-    <div class="cat-card"><div class="cat-code">06</div><div><div class="cat-name">HCA Certification &amp; CE</div><div class="cat-note">Cert within 200 days, 12 hrs CE/yr</div></div></div>
-    <div class="cat-card"><div class="cat-code">07</div><div><div class="cat-name">Nurse Delegation</div><div class="cat-note">If performing delegated tasks</div></div></div>
-    <div class="cat-card"><div class="cat-code">08</div><div><div class="cat-name">Administrator Training <span class="tag-provider">provider</span></div><div class="cat-note">54-hr DSHS-approved admin course</div></div></div>
+  <h2><span class="accent"></span>WAC Categories — Required Documents</h2>
+  <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Washington Administrative Code chapters 388-76 and 388-112A define the personnel record requirements for AFHs. Each category below lists the specific documents that must be on file per WAC 388-76-10198 and related sections.</p>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">01</div><div class="cat-name">Identity &amp; Employment</div></div>
+    <ul class="cat-docs">
+      <li>Government-issued photo ID (driver's license, passport, or state ID)</li>
+      <li>Employment application (signed and dated)</li>
+      <li>I-9 Employment Eligibility Verification</li>
+      <li>W-4 tax withholding form</li>
+      <li>Staff contact information (address, phone)</li>
+      <li>Work permit (if applicable)</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">02</div><div class="cat-name">Background Check</div></div>
+    <ul class="cat-docs">
+      <li>Washington State name/date-of-birth background check (valid 2 years)</li>
+      <li>National fingerprint-based background check (valid indefinitely)</li>
+      <li>Background check disclosure and authorization forms (signed)</li>
+      <li>DSHS background check results letter</li>
+      <li>Portable background check (PBC) number/verification (if applicable)</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">03</div><div class="cat-name">Health Screening (TB)</div></div>
+    <ul class="cat-docs">
+      <li>TB test result (Mantoux/PPD skin test or blood test — must be within 3 days of hire)</li>
+      <li>Chest X-ray report (if positive TB test)</li>
+      <li>TB symptom screening questionnaire</li>
+      <li>COVID-19 vaccination record (if applicable)</li>
+      <li>N95 respirator fit test (if required for role)</li>
+      <li>Influenza vaccination or declination form</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">04</div><div class="cat-name">CPR &amp; First Aid</div></div>
+    <ul class="cat-docs">
+      <li>CPR certification card (American Heart Association or Red Cross — must be current)</li>
+      <li>First Aid certification card (must be current)</li>
+      <li>AED training certificate (if included in CPR course)</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">05</div><div class="cat-name">Orientation &amp; Training</div></div>
+    <ul class="cat-docs">
+      <li>5-hour safety orientation certificate (completed before providing care)</li>
+      <li>70-hour basic training certificate (or modified basic training, if applicable)</li>
+      <li>Home Care Aide (HCA) certification</li>
+      <li>Specialty training certificates: dementia, mental health, developmental disabilities (within 120 days if serving residents with special needs)</li>
+      <li>HIV/AIDS bloodborne pathogens training certificate</li>
+      <li>Food handler's permit/ food safety training certificate</li>
+      <li>First aid and CPR training attendance records</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">06</div><div class="cat-name">HCA Certification &amp; Continuing Education</div></div>
+    <ul class="cat-docs">
+      <li>HCA license/certification (current, obtained within 200 days of hire)</li>
+      <li>Continuing education records — 12 hours annually by birthday</li>
+      <li>CEU certificates for each training completed</li>
+      <li>Dementia specialty training (7 hours every 2 years if serving dementia residents)</li>
+      <li>Mental health specialty training (if applicable)</li>
+      <li>DSHS specialty training (DDST, if serving residents with developmental disabilities)</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">07</div><div class="cat-name">Nurse Delegation</div></div>
+    <ul class="cat-docs">
+      <li>Nurse delegation core training certificate</li>
+      <li>Delegation competency verification (signed by delegating RN)</li>
+      <li>Specific delegated task authorizations (medication administration, insulin, etc.)</li>
+      <li>Annual delegation update/competency check</li>
+    </ul>
+  </div>
+
+  <div class="cat-card">
+    <div class="cat-header"><div class="cat-code">08</div><div class="cat-name">Administrator Training <span class="tag-provider">provider only</span></div></div>
+    <ul class="cat-docs">
+      <li>DSHS-approved 54-hour AFH administrator training certificate</li>
+      <li>Administrator competency exam results (quizzes, projects, final exam)</li>
+      <li>Documentation of 1,000 hours direct care experience (per WAC 388-76-10130)</li>
+      <li>High school diploma or GED verification</li>
+      <li>Liability insurance certificate (WAC 388-76-10191)</li>
+      <li>Succession plan (WAC 388-76-10201)</li>
+    </ul>
   </div>
 </div>
 
