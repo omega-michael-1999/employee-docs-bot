@@ -6,3 +6,4 @@ config.local.json
 !config.example.json
 !*.service
 .service-account-keys/
+data/
