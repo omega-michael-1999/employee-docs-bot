@@ -557,7 +557,7 @@ def is_provider(client, emp_name):
 
 # --- Bot ---
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, JobQueue
 
 # Pending classifications stored in chat_states dict + SQLite (data/pending.db)
 
@@ -955,25 +955,23 @@ def match_category(text, cat_keywords):
 
 # --- Heartbeat / External Monitoring ---
 
-async def heartbeat_task(app):
+async def heartbeat_callback(context: ContextTypes.DEFAULT_TYPE):
     """Periodic heartbeat ping to external monitoring service.
 
-    Runs every 5 minutes if HEARTBEAT_URL is configured.
+    Called every 5 minutes via JobQueue if HEARTBEAT_URL is configured.
     Pings the URL with a simple GET — the monitoring service
     alerts if it stops receiving pings (bot crash, API key expiry,
     or process hang).
     """
+    if not HEARTBEAT_URL:
+        return
     import urllib.request
-    while True:
-        await asyncio.sleep(300)  # 5 minutes
-        if not HEARTBEAT_URL:
-            continue
-        try:
-            req = urllib.request.Request(HEARTBEAT_URL, method="GET")
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                log.debug(f"Heartbeat OK ({resp.status})")
-        except Exception as e:
-            log.warning(f"Heartbeat failed: {e}")
+    try:
+        req = urllib.request.Request(HEARTBEAT_URL, method="GET")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            log.debug(f"Heartbeat OK ({resp.status})")
+    except Exception as e:
+        log.warning(f"Heartbeat failed: {e}")
 
 
 def get_client_config(chat_id):
@@ -1077,12 +1075,12 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    # Start heartbeat monitoring (pings every 5 min)
-    if HEARTBEAT_URL:
-        app.create_task(heartbeat_task(app), "heartbeat")
+    # Start heartbeat monitoring (pings every 5 min via JobQueue)
+    if HEARTBEAT_URL and app.job_queue:
+        app.job_queue.run_repeating(heartbeat_callback, interval=300, first=60)
         log.info(f"Heartbeat monitoring active → {HEARTBEAT_URL}")
     else:
-        log.info("No HEARTBEAT_URL set — monitoring disabled")
+        log.info("No HEARTBEAT_URL set or JobQueue unavailable — monitoring disabled")
 
     log.info("Bot started")
     app.run_polling()
