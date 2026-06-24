@@ -664,7 +664,7 @@ def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("providers", providers_command))
-    app.add_handler(MessageHandler(filters.PHOTO | filters.DocumentCategory("application/pdf") | filters.DocumentCategory("image/*"), handle_document))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.MimeType("application/pdf") | filters.Document.Category("image/"), handle_document))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
