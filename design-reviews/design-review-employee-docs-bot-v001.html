@@ -126,7 +126,7 @@
   <div class="badge">Design Review</div>
   <h1>Employee Docs Bot — Design Review</h1>
   <p>Structural, engineering, and operational assessment of the AFH document filing system</p>
-  <div class="meta">2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; Version 1.0.0 &nbsp;·&nbsp; Review of v1 design &nbsp;·&nbsp; <span class="tag tag-amber">Pre-implementation review</span></div>
+  <div class="meta">2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; Version 1.1.0 &nbsp;·&nbsp; Review of v1 design &nbsp;·&nbsp; Designer responses recorded &nbsp;·&nbsp; <span class="tag tag-green">All findings accepted</span></div>
 </div>
 
 <div class="nav-bar">
@@ -191,7 +191,7 @@
 <!-- ===== OPEN ISSUES ===== -->
 <section id="open-issues" class="section">
   <h2><span class="accent-bar"></span>Open Issues</h2>
-  <p style="margin-bottom:12px;">Findings that remain unresolved — requiring designer attention before production deployment:</p>
+  <p style="margin-bottom:12px;">All findings have been reviewed and accepted by the designer. Each section below includes the designer's response and any solution amendments. Implementation pending.</p>
   <table class="issues-table">
     <tr><th>ID</th><th>Severity</th><th>Title</th></tr>
     <tr><td><a href="#sp-1">SP-1</a></td><td class="sev-high">HIGH</td><td>Roster Cache Absence Creates Latency-Scaling Problem</td></tr>
@@ -231,10 +231,10 @@
 
     <div class="solution-box">
       <h4>Proposed Solution</h4>
-      <p><strong>In-memory cache with 30-minute TTL.</strong> Cache the employee roster dict on first fetch. Re-fetch on cache miss or after TTL expiry. Add a <code>/reload-roster</code> command for the Omega administrator to force-refresh after onboarding a new employee. This costs ~10 lines of code, eliminates the Drive API call from the hot path of every document, and the "staleness window" is bounded by a TTL the operator controls. A systemd service restart also clears the cache on demand.</p>
+      <p><strong>In-memory cache with 30-minute TTL.</strong> Cache the employee roster dict on first fetch. On cache miss (TTL expiry or cold start), auto-re-fetch from Drive automatically — no manual reload command needed. This costs ~10 lines of code, eliminates the Drive API call from the hot path of every document, and the "staleness window" is bounded by a TTL the operator controls.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Approved — 30-minute TTL cache with automatic reload on cache miss. The administrator should not need to know about caching. <em>Solution revised per designer: removed manual /reload-roster command, system re-fetches automatically on cache miss.</em></div>
   </div>
 
   <!-- SP-2 -->
@@ -261,7 +261,7 @@
       <p style="margin-top:8px;"><strong>Alternative (lighter): JSON file persistence.</strong> Serialize <code>pending</code> to <code>pending.json</code> on every state transition. On startup, deserialize if the file exists. Simpler but loses SQL queryability — and you <em>will</em> want to query pending documents when debugging.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Approved — go with SQLite persistence solution.</div>
   </div>
 
   <!-- SP-3 -->
@@ -288,7 +288,7 @@
       <p><strong>Per-client service accounts.</strong> Create one Google service account per AFH client, grant it Editor access only to that client's Drive root folder, and store the key file per-client as the config schema already implies (<code>"service_account_key_file": ".service-account-keys/edmonds-villa-sa.json"</code>). The code already supports this — it reads the key file from the per-client config entry. The only change is operational: create separate keys and grant scoped permissions. This eliminates cross-tenant blast radius. Key files remain gitignored and filesystem-protected.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- SP-4 -->
@@ -326,7 +326,7 @@ chat_states: dict[int, ChatSession] = {}  # chat_id -> ChatSession</pre>
       <p>This eliminates the multi-key lookup pattern, ensures one state per chat (preventing cross-document confusion), and makes state transitions explicit and auditable. A per-chat <code>asyncio.Lock</code> prevents concurrent state mutations on the same chat_id. The lock is the cheap, correct fix for the race condition — it serializes state transitions for a given chat without blocking other chats.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- EI-1 -->
@@ -348,7 +348,7 @@ chat_states: dict[int, ChatSession] = {}  # chat_id -> ChatSession</pre>
       <p style="margin-top:8px;"><strong>If keeping DeepSeek:</strong> Replace the regex JSON parser with a proper <code>json.loads(content)</code> with cleanup for markdown code fences. Add a retry on JSON parse failure with a prompt correction. Add structured output via a function-calling API if DeepSeek supports it.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- EI-2 -->
@@ -373,7 +373,7 @@ pythonpath = .</pre>
       <p>Change the test imports to relative: <code>from bot import classify_by_rules</code> works when <code>pythonpath = .</code> is set. Remove the <code>sys.path.insert</code> lines from all test files.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- EI-3 -->
@@ -397,7 +397,7 @@ pythonpath = .</pre>
       <p><strong>2. File size and type guards:</strong> Reject files >20MB before download. Check the file extension against a whitelist of supported types before passing to <code>doc-extract.py</code>. Give clear error messages: "This file type is not supported. Please send PDF, JPEG, PNG, or HEIC photos of documents." instead of "Could not extract text from this document."</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Both solutions accepted.</div>
   </div>
 
   <!-- EI-4 -->
@@ -418,7 +418,7 @@ pythonpath = .</pre>
       <p><strong>Add a document UUID at pipeline entry.</strong> Generate a UUID (<code>doc_xxx</code>) when <code>handle_document</code> receives a file. Pass it through every log line as <code>doc_id</code>. Every state in the pipeline — received, extracted, classified (with tier and result), confirmed, filed — is logged with the doc_id. This makes <code>journalctl -u employee-docs-bot | grep doc_abc123</code> the debugging superpower. The UUID also serves as the temp file name prefix, making it easy to correlate filesystem artifacts with log entries. This costs ~5 lines of code for the UUID generation and a <code>logging.LoggerAdapter</code> wrapper.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- OP-1 -->
@@ -445,7 +445,7 @@ pythonpath = .</pre>
       <p><strong>Register temp files in a cleanup registry.</strong> Track every created temp file path in a <code>set()</code>. On bot startup (or in a periodic async task), sweep and remove any files older than 24 hours. Use <code>@contextmanager</code> or a dedicated <code>TempFileManager</code> class that ensures cleanup in all exit paths. This is low-priority but eliminates an entire class of operational debt.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- QF-1 -->
@@ -466,7 +466,7 @@ pythonpath = .</pre>
       <p>When Tier 2 fails and Tier 3 initiates, send an intermediate message: "I couldn't auto-classify this document (the classification service is temporarily unavailable). Let me ask you instead:" before starting the manual prompt. If the timeout is hit, tell the user "The classification service timed out — sorry about that. Let me ask you directly:" rather than leaving them waiting. This costs a couple of log checks and a reply_text call but dramatically changes the user's perception of reliability. A retry button for the LLM classification would be even better — let the user decide whether to wait for an API retry or skip to manual.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted.</div>
   </div>
 
   <!-- QF-2 -->
@@ -485,7 +485,7 @@ pythonpath = .</pre>
       <p>Define a single explicit whitelist of supported extensions (e.g., <code>SUPPORTED_EXTS = {'.pdf', '.jpg', '.jpeg', '.png', '.heic', '.heif', '.docx', '.txt'}</code>) and validate at the handler level. Reject unsupported types with a clear message: "I can only process PDF, JPEG, PNG, HEIC photos, DOCX, and TXT files." The error message should tell the user what they <em>can</em> send, not just what they sent wrong. This aligns with EI-3's file guard suggestion.</p>
     </div>
 
-    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+    <div class="designer-response"><strong>Designer's response:</strong> Accepted. The error message should say what type of file the system thinks the user provided, along with the list of file types the system can accept. <em>Solution augmented per designer: include detected file type in the rejection message.</em></div>
   </div>
 
 </section>
@@ -522,7 +522,7 @@ pythonpath = .</pre>
 </div>
 
 <div class="footer">
-  <p>Employee Docs Bot — Design Review v1.0.0 &nbsp;·&nbsp; 2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; <a href="https://omegadigital.ai">Omega Digital Services</a> &nbsp;·&nbsp; Confidential</p>
+  <p>Employee Docs Bot — Design Review v1.1.0 &nbsp;·&nbsp; 2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; Designer responses recorded 2026-06-24 &nbsp;·&nbsp; <a href="https://omegadigital.ai">Omega Digital Services</a> &nbsp;·&nbsp; Confidential</p>
 </div>
 
 </body>
