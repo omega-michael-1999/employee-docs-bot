@@ -1,0 +1,31 @@
+{
+  "clients": [
+    {
+      "chat_id": -1001234567890,
+      "name": "Edmonds Villa",
+      "drive_root_id": "1V-pKZ5-MEHJLlw6ZqHTB6zuapULJ9XOK",
+      "service_account_key_file": ".service-account-keys/edmonds-villa-sa.json",
+      "provider_name": "Sandra Namwase",
+      "categories": [
+        "01 - Identity & Employment",
+        "02 - Background Check",
+        "03 - Health Screening",
+        "04 - CPR & First Aid",
+        "05 - Orientation & Training",
+        "06 - HCA Certification & CE",
+        "07 - Nurse Delegation",
+        "08 - Administrator Training"
+      ],
+      "cat_keywords": {
+        "01 - Identity & Employment": ["id", "driver", "license", "passport", "i-9", "w-4", "ssn", "application", "picture", "photo", "work permit"],
+        "02 - Background Check": ["background", "dshs", "fingerprint", "authorization", "disclosure"],
+        "03 - Health Screening": ["tb", "tuberculosis", "ppd", "chest", "x-ray", "quantiferon", "covid", "vaccination", "n95", "fit test"],
+        "04 - CPR & First Aid": ["cpr", "bls", "first aid", "aed", "american heart", "red cross", "resuscitation"],
+        "05 - Orientation & Training": ["orientation", "basic training", "75 hour", "70 hour", "food handler", "food safety", "hiv", "bloodborne"],
+        "06 - HCA Certification & CE": ["hca", "cna", "license", "certification", "continuing education", "ceu", "dementia", "mental health", "specialty", "ddst"],
+        "07 - Nurse Delegation": ["delegation", "nurse deleg"],
+        "08 - Administrator Training": ["administrator", "admin training"]
+      }
+    }
+  ]
+}

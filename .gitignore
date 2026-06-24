@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+config.local.json
+*.json
+!config.example.json
+!*.service
+.service-account-keys/

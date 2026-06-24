@@ -1,0 +1,17 @@
+[Unit]
+Description=Employee Docs Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=michaelschneider
+WorkingDirectory=/opt/employee-docs-bot
+ExecStart=/usr/bin/python3 bot.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/employee-docs-bot/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
