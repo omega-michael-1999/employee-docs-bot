@@ -564,18 +564,23 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Process a document or photo sent to the channel."""
+    # Use channel_post for channels, message for groups/private
+    msg = update.channel_post or update.message
+    if msg is None:
+        return
+
     chat_id = update.effective_chat.id
     client = next((c for c in CONFIG["clients"] if c["chat_id"] == chat_id), None)
     if not client:
-        await update.message.reply_text("This chat is not configured for document filing.")
+        await msg.reply_text("This chat is not configured for document filing.")
         return
 
     # Get file
     file = None
-    if update.message.document:
-        file = update.message.document
-    elif update.message.photo:
-        file = update.message.photo[-1]
+    if msg.document:
+        file = msg.document
+    elif msg.photo:
+        file = msg.photo[-1]
 
     if not file:
         return
@@ -583,7 +588,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check file size
     if hasattr(file, "file_size") and file.file_size and file.file_size > MAX_FILE_SIZE_BYTES:
         mb = file.file_size / (1024 * 1024)
-        await update.message.reply_text(
+        await msg.reply_text(
             f"❌ This file is too large ({mb:.1f} MB). Maximum file size is 20 MB."
         )
         return
@@ -592,7 +597,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if hasattr(file, "file_name") and file.file_name:
         ext = Path(file.file_name).suffix.lower()
         if ext and ext not in SUPPORTED_EXTS:
-            await update.message.reply_text(
+            await msg.reply_text(
                 f"❌ This file type is not supported. "
                 f"You sent a **{ext[1:].upper()}** file. "
                 f"I can only process: PDF, JPEG, PNG, HEIC, DOCX, and TXT files.",
@@ -613,13 +618,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await tg_file.download_to_drive(tmp.name)
     fname = getattr(file, "file_name", f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}{suffix}")
 
-    await update.message.reply_text("📄 Processing document...")
+    await msg.reply_text("📄 Processing document...")
 
     # Extract text
     text = extract_text(tmp.name)
     if not text or text.startswith("ERROR"):
         dlog.warning(f"Text extraction failed: {text}")
-        await update.message.reply_text(f"Could not extract text from this document.")
+        await msg.reply_text(f"Could not extract text from this document.")
         tmp.close()
         os.unlink(tmp.name)
         unregister_temp_file(tmp.name)
@@ -628,7 +633,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Load roster
     sa_key_path = Path(__file__).parent / client["service_account_key_file"]
     if not sa_key_path.exists():
-        await update.message.reply_text("Service account key not configured.")
+        await msg.reply_text("Service account key not configured.")
         tmp.close()
         os.unlink(tmp.name)
         unregister_temp_file(tmp.name)
@@ -642,7 +647,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lambda: list_employee_folders(drive, client["drive_root_id"])
         )
     except Exception as e:
-        await update.message.reply_text(f"Could not access Google Drive: {e}")
+        await msg.reply_text(f"Could not access Google Drive: {e}")
         tmp.close()
         os.unlink(tmp.name)
         unregister_temp_file(tmp.name)
@@ -669,7 +674,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if emp and cat:
             # Ask for confirmation
-            msg = await update.message.reply_text(
+            msg = await msg.reply_text(
                 f"📄 Looks like this is a **{cat}** for **{emp}**.\nIs that right?",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
@@ -708,7 +713,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 session.awaiting = "category"
                 session.state = ChatState.AWAITING_DOCUMENT_TYPE
 
-            await update.message.reply_text(
+            await msg.reply_text(
                 fallback_msg,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([[
@@ -786,7 +791,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.state = ChatState.AWAITING_DOCUMENT_TYPE
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
-            await update.message.reply_text(
+            await msg.reply_text(
                 "What type of document is this?\n"
                 "Examples: CPR Certificate, TB Test Results, Driver's License, Background Check, etc."
             )
@@ -819,7 +824,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.state = ChatState.AWAITING_DOCUMENT_TYPE
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
-            await update.message.reply_text(
+            await msg.reply_text(
                 "What type of document is this?\n"
                 "Examples: CPR Certificate, TB Test Results, Driver's License"
             )
@@ -987,12 +992,12 @@ async def providers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     client = get_client_config(chat_id)
     if not client:
-        await update.message.reply_text("This chat is not configured for document filing.")
+        await msg.reply_text("This chat is not configured for document filing.")
         return
 
     sa_key = Path(__file__).parent / client["service_account_key_file"]
     if not sa_key.exists():
-        await update.message.reply_text("Service account key not configured.")
+        await msg.reply_text("Service account key not configured.")
         return
 
     try:
@@ -1003,11 +1008,11 @@ async def providers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lambda: list_employee_folders(drive, client["drive_root_id"])
         )
     except Exception as e:
-        await update.message.reply_text(f"Could not access Google Drive: {e}")
+        await msg.reply_text(f"Could not access Google Drive: {e}")
         return
 
     if not employees:
-        await update.message.reply_text("No employees found in Drive.")
+        await msg.reply_text("No employees found in Drive.")
         return
 
     lines = ["📋 **Employee Provider Status**\n"]
@@ -1022,9 +1027,9 @@ async def providers_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join(lines)
     if len(msg) > 4000:
         for i in range(0, len(msg), 4000):
-            await update.message.reply_text(msg[i:i + 4000], parse_mode="Markdown")
+            await msg.reply_text(msg[i:i + 4000], parse_mode="Markdown")
     else:
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        await msg.reply_text(msg, parse_mode="Markdown")
 
 
 def main():
@@ -1083,7 +1088,14 @@ def main():
         log.info("No HEARTBEAT_URL set or JobQueue unavailable — monitoring disabled")
 
     log.info("Bot started")
-    app.run_polling()
+    app.run_polling(
+        allowed_updates=[
+            "message",
+            "channel_post",
+            "callback_query",
+            "edited_message",
+        ]
+    )
 
 
 if __name__ == "__main__":

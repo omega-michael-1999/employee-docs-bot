@@ -92,6 +92,7 @@ async def _make_update_with_document(chat_id=TEST_CHAT_ID, file_name="test_cpr.p
     update = MagicMock(spec=Update)
     update.update_id = 1
     update.message = msg
+    update.channel_post = None
     update.callback_query = None
     update.effective_chat = chat
     update.effective_message = msg
@@ -175,6 +176,7 @@ class TestHandlerOrchestration:
         update = MagicMock(spec=Update)
         update.update_id = 3
         update.message = msg
+        update.channel_post = None
         update.callback_query = None
         update.effective_chat = chat
         update.effective_message = msg
