@@ -622,13 +622,12 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Extract text
     text = extract_text(tmp.name)
-    if not text or text.startswith("ERROR"):
+    text_ok = text and not text.startswith("ERROR")
+    if text_ok:
+        dlog.info(f"Text extracted: {len(text)} chars")
+    else:
         dlog.warning(f"Text extraction failed: {text}")
-        await msg.reply_text(f"Could not extract text from this document.")
-        tmp.close()
-        os.unlink(tmp.name)
-        unregister_temp_file(tmp.name)
-        return
+        text = ""
 
     # Load roster
     sa_key_path = Path(__file__).parent / client["service_account_key_file"]
@@ -672,10 +671,24 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             created_at=datetime.now(),
         )
 
+        # Build extraction status banner
+        if text_ok:
+            status_icon = "✅"
+            status_detail = f"{len(text)} characters, text looks good"
+        else:
+            status_icon = "❌"
+            status_detail = "Could not read the document"
+
+        emp_display = emp if emp else "Unknown"
+        cat_display = cat if cat else "Unknown"
+
         if emp and cat:
-            # Ask for confirmation
+            # High confidence — extraction status + confirmation prompt
             msg = await msg.reply_text(
-                f"📄 Looks like this is a **{cat}** for **{emp}**.\nIs that right?",
+                f"{status_icon} Document text found: {status_detail}\n"
+                f"Employee name: {emp_display}\n"
+                f"Document type: {cat_display}\n\n"
+                f"Is this correct?",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),
@@ -684,37 +697,25 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             session.message_id = msg.message_id
         else:
-            # Could not classify — start manual correction flow with context
+            # Could not classify — show extraction status, then ask for what's missing
             session.state = ChatState.AWAITING_EMPLOYEE_CORRECTION
-            session.awaiting = "employee"
 
-            # Craft helpful fallback message based on what failed
-            if not emp and not cat:
-                if method == "failed":
-                    fallback_msg = (
-                        "I couldn't auto-classify this document (the classification service "
-                        "is temporarily unavailable). Let me ask you instead:\n\n"
-                        "What's the employee's full name?"
-                    )
-                else:
-                    fallback_msg = (
-                        "I couldn't identify the employee or document type from the text. "
-                        "Let me ask you:\n\n"
-                        "What's the employee's full name?"
-                    )
-            else:
-                # Known employee but couldn't classify document
-                fallback_msg = (
-                    f"I found **{emp}** in the roster but couldn't determine "
-                    f"the document type. Let me ask you:\n\n"
-                    f"What type of document is this?"
-                )
-                session.employee = emp or ""
+            if emp:
+                # Known employee but couldn't classify document type
+                session.employee = emp
                 session.awaiting = "category"
                 session.state = ChatState.AWAITING_DOCUMENT_TYPE
+                prompt = "What type of document is this?"
+            else:
+                # Don't know the employee either
+                session.awaiting = "employee"
+                prompt = "What's the employee's full name?"
 
             await msg.reply_text(
-                fallback_msg,
+                f"{status_icon} Document text found: {status_detail}\n"
+                f"Employee name: {emp_display}\n"
+                f"Document type: {cat_display}\n\n"
+                f"{prompt}",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("🆕 New Employee", callback_data="new_employee")
