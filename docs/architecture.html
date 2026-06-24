@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — Employee Docs Bot</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+  h2 { margin-top: 36px; border-bottom: 1px solid #eee; padding-bottom: 4px; color: #333; }
+  h3 { margin-top: 24px; color: #555; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 0.95em; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 0.9em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .diagram { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin: 16px 0; font-family: monospace; white-space: pre; line-height: 1.4; overflow-x: auto; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .tag { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; }
+  .tag-decision { background: #e8f5e9; color: #2e7d32; }
+  .tag-warning { background: #fff3e0; color: #e65100; }
+</style>
+</head>
+<body>
+
+<h1>Employee Docs Bot — Architecture Document</h1>
+<p class="meta"><strong>Date:</strong> 2026-06-24 &nbsp;|&nbsp; <strong>Version:</strong> 1.0 &nbsp;|&nbsp; <strong>Status:</strong> Deployed, pre-production</p>
+
+<h2>System Overview</h2>
+
+<p>The Employee Docs Bot is a document filing system for Washington State adult family homes. It receives employee documents via Telegram, extracts text via OCR, classifies by employee and WAC category using a hybrid rules+LLM approach, confirms classifications with the user, and files documents into Google Drive with proper naming and metadata.</p>
+
+<p>The system is designed as a single Python process per Telegram bot token, sharing a multi-tenant configuration file. It runs on a single Linux server (hive) under systemd.</p>
+
+<h2>Deployment Architecture</h2>
+
+<div class="diagram">┌─────────────────────────────────────────────────────────────────┐
+│                         hive (Beelink)                          │
+│                                                                  │
+│  ┌─────────────────────────────┐  ┌──────────────────────────┐  │
+│  │ employee-docs-bot-test      │  │ employee-docs-bot-prod   │  │
+│  │ (systemd)                   │  │ (systemd — not yet       │  │
+│  │ User: michael               │  │  created)                │  │
+│  │ Token: test (8669...)       │  │ User: michael             │  │
+│  │ Env:  .env.test             │  │ Token: prod (8870...)     │  │
+│  │ Chat: afh-22-employee-docs  │  │ Env:  .env.prod           │  │
+│  └──────────┬──────────────────┘  │ Chat: edmonds-villa-...  │  │
+│             │                     └──────────┬───────────────┘  │
+│             │                                │                  │
+│             └────────┬───────────────────────┘                  │
+│                      │                                          │
+│             ┌────────▼─────────┐                                │
+│             │ /opt/employee-   │                                │
+│             │ docs-bot/        │                                │
+│             │ ├── bot.py       │                                │
+│             │ ├── config.json  │  ← shared by both instances   │
+│             │ ├── .env.test    │                                │
+│             │ ├── .env.prod    │                                │
+│             │ ├── scripts/     │                                │
+│             │ │   └── doc-extract.py                            │
+│             │ ├── .venv/       │                                │
+│             │ └── .service-    │                                │
+│             │     account-keys/│                                │
+│             └──────────────────┘                                │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+<h3>Filesystem Layout</h3>
+<table>
+  <tr><th>Path</th><th>Purpose</th></tr>
+  <tr><td><code>/opt/employee-docs-bot/</code></td><td>Git checkout of <code>omega-michael-1999/employee-docs-bot</code></td></tr>
+  <tr><td><code>bot.py</code></td><td>Main bot process (Telegram handlers, classification, Drive filing)</td></tr>
+  <tr><td><code>config.json</code></td><td>Multi-tenant client configuration (gitignored)</td></tr>
+  <tr><td><code>.env.test</code></td><td>Test bot environment variables (gitignored)</td></tr>
+  <tr><td><code>.env.prod</code></td><td>Production bot environment variables (gitignored)</td></tr>
+  <tr><td><code>scripts/doc-extract.py</code></td><td>Document text extraction (PDF, DOCX, images, HEIC)</td></tr>
+  <tr><td><code>.venv/</code></td><td>Python virtual environment</td></tr>
+  <tr><td><code>.service-account-keys/</code></td><td>Google service account JSON keys (gitignored)</td></tr>
+  <tr><td><code>deploy/employee-docs-bot.service</code></td><td>systemd unit template</td></tr>
+  <tr><td><code>docs/</code></td><td>Documentation (PRD, architecture, glossary, handoff)</td></tr>
+</table>
+
+<h3>Systemd Service Definition</h3>
+<pre>[Unit]
+Description=Employee Docs Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=michael
+Group=michael
+WorkingDirectory=/opt/employee-docs-bot
+ExecStart=/opt/employee-docs-bot/.venv/bin/python3 bot.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/employee-docs-bot/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target</pre>
+
+<h2>Document Processing Pipeline</h2>
+
+<p>The core document flow is a linear pipeline with interactive confirmation branching:</p>
+
+<div class="diagram">Telegram Message
+      │
+      ▼
+┌─────────────┐
+│   Receive   │  Download file to temp. Determine type from extension.
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Extract    │  doc-extract.py subprocess (300s timeout)
+│  Text       │  PDF → PyPDF2 then fallback to vision OCR
+│             │  Image → Anthropic Haiku vision API
+│             │  DOCX → native XML extraction
+│             │  HEIC → pillow-heif → JPEG → vision OCR
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Load       │  Google Drive API → list folders under CAREGIVERS/
+│  Roster     │  Build {name_lower: {id, name}} dict
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Classify   │  Three-tier hybrid:
+│             │  1. Rules (word-boundary keyword match)
+│   ┌─────┐   │  2. LLM (DeepSeek) if ambiguous
+│   │  ?  │   │  3. Manual correction if LLM fails
+│   └──┬──┘   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Confirm    │  Inline keyboard [👍 Yes] [👎 No]
+│  with       │  👎 No → type employee name → type document type
+│  Sandra     │  → final confirmation → file
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  File to    │  Upload to Drive category folder
+│  Google     │  Rename: "{Name} - {Category}.{ext}"
+│  Drive      │  + upload companion robot.txt
+└─────────────┘</div>
+
+<h2>Classification Tier Logic</h2>
+
+<p>The classification engine is the most architecturally significant component. It balances speed (rules), accuracy (LLM), and human oversight (manual correction).</p>
+
+<h3>Tier 1: Rules</h3>
+<ul>
+  <li><strong>Employee matching:</strong> Word-boundary regex against the extracted text and filename for each employee name in the roster. The employee key is the folder name lowercased (e.g., <code>"solethu qoyi"</code> from <code>"Solethu Qoyi"</code>).</li>
+  <li><strong>Category matching:</strong> Substring keyword arrays per WAC category (e.g., <code>"cpr"</code>, <code>"bls"</code>, <code>"first aid"</code> → "04 - CPR &amp; First Aid").</li>
+  <li><strong>Confidence check:</strong> If the match is weak (single-word name hit, generic keyword), the result is flagged as ambiguous and escalated to Tier 2 rather than accepted.</li>
+</ul>
+
+<h3>Tier 2: LLM (DeepSeek)</h3>
+<ul>
+  <li>Called when rules produce ambiguous or partial results.</li>
+  <li>Sends the extracted text (first 3000 chars) plus the candidate employee/category from Tier 1 as a hint.</li>
+  <li>DeepSeek returns JSON with <code>employee</code>, <code>category</code>, <code>description</code>.</li>
+  <li>Output is validated against the known employee roster and category list before acceptance.</li>
+  <li>Network timeout: 30s.</li>
+</ul>
+
+<h3>Tier 3: Manual Correction</h3>
+<ul>
+  <li>Triggered when both Tier 1 and Tier 2 fail.</li>
+  <li>Two-step text prompt: (1) "What's the employee's full name?" with optional "🆕 New Employee" button, (2) "What type of document is this?" with example hints.</li>
+  <li>User's free-text description is mapped to a WAC category via keyword matching (<code>match_category</code>).</li>
+  <li>Final confirmation button before filing.</li>
+</ul>
+
+<h2>State Management</h2>
+
+<table>
+  <tr><th>State</th><th>Storage</th><th>Description</th></tr>
+  <tr><td>Pending classifications</td><td>In-memory dict (<code>pending</code>)</td><td>Keyed by <code>(chat_id, message_id)</code>. Holds temp file path, extracted text, classification results, client config, employee roster. Lost on restart — user re-sends document.</td></tr>
+  <tr><td>Correction flow state</td><td>In-memory dict with <code>"awaiting"</code> key</td><td>Values: <code>"employee"</code>, <code>"category"</code>, <code>"employee_name"</code>, <code>"new_employee"</code>. Drives the multi-step text correction conversation.</td></tr>
+  <tr><td>Employee roster</td><td>Google Drive (folder names)</td><td>Scanned at runtime per document. Not cached — always hits the Drive API. This ensures new employees appear immediately but adds latency.</td></tr>
+  <tr><td>Client config</td><td><code>config.json</code> (filesystem)</td><td>Read at startup. Contains chat IDs, Drive folder IDs, provider list, category keywords per client.</td></tr>
+  <tr><td>Temp files</td><td>/tmp (filesystem)</td><td>Downloaded Telegram files cleaned up after filing or on error.</td></tr>
+</table>
+
+<h2>Google Drive Folder Structure</h2>
+
+<div class="diagram">EMPLOYEE RECORDS/
+├── CAREGIVERS/
+│   ├── Fatou Manneh/
+│   │   ├── 01 - Identity &amp; Employment/
+│   │   ├── 02 - Background Check/
+│   │   ├── 03 - Health Screening/
+│   │   ├── 04 - CPR &amp; First Aid/
+│   │   ├── 05 - Orientation &amp; Training/
+│   │   ├── 06 - HCA Certification &amp; CE/
+│   │   ├── 07 - Nurse Delegation/
+│   │   └── 08 - Administrator Training/    ← only created for providers
+│   ├── Sandra Namwase/
+│   │   └── (same 8 categories)
+│   └── ... (16 total employees)
+├── PROVIDER/
+│   └── Sandra Namwase/
+│       └── (same 8 categories)
+└── (facility-level docs: insurance, succession plan, etc.)</div>
+
+<p><strong>Note:</strong> All filing goes into <code>CAREGIVERS/</code>. The <code>PROVIDER/</code> tree exists from a prior organizational scheme but is not used by the bot. Provider status is tracked in <code>config.json</code> for audit purposes, not for routing.</p>
+
+<h2>External Dependencies</h2>
+
+<table>
+  <tr><th>Dependency</th><th>Purpose</th><th>Auth</th></tr>
+  <tr><td>Telegram Bot API</td><td>Receive messages, send replies, download files</td><td>Bot token in <code>.env</code></td></tr>
+  <tr><td>Google Drive API v3</td><td>List folders, create folders, upload files</td><td>Service account JSON key</td></tr>
+  <tr><td>Anthropic Claude API (Haiku)</td><td>Vision OCR for scanned PDFs and images</td><td><code>ANTHROPIC_VISION_API_KEY</code></td></tr>
+  <tr><td>DeepSeek Chat API</td><td>LLM-based classification fallback</td><td><code>DEEPSEEK_API_KEY</code></td></tr>
+  <tr><td>PyMuPDF (fitz)</td><td>Render PDF pages to images for vision OCR</td><td>—</td></tr>
+  <tr><td>PyPDF2</td><td>Extract text from digital PDFs</td><td>—</td></tr>
+  <tr><td>Pillow + pillow-heif</td><td>HEIC/HEIF to JPEG conversion</td><td>—</td></tr>
+</table>
+
+<h2>Security Model</h2>
+
+<table>
+  <tr><th>Concern</th><th>Approach</th></tr>
+  <tr><td>Drive access</td><td>Service account with Editor role on specific folders only. No broad Drive access. Key file is gitignored and readable only by the OS user.</td></tr>
+  <tr><td>Telegram bot tokens</td><td>Stored in <code>.env</code> files (gitignored). Separate test and production tokens.</td></tr>
+  <tr><td>API keys</td><td>Anthropic and DeepSeek keys in <code>.env</code>. Anthropic key has vision scope only.</td></tr>
+  <tr><td>Channel trust</td><td>Bot responds to any message in configured chat IDs. No per-user authentication within the channel. Suitable for a private AFH channel.</td></tr>
+  <tr><td>Temp files</td><td>Downloaded to <code>/tmp</code>, deleted after processing. <code>-robot.txt</code> companion files are created in the working directory and cleaned up after upload.</td></tr>
+  <tr><td>OS user</td><td>Runs as <code>michael</code> (unprivileged user) under systemd. No root execution.</td></tr>
+</table>
+
+<h2>Multi-Tenancy Model</h2>
+
+<p>New clients are added by adding an entry to the <code>clients</code> array in <code>config.json</code>:</p>
+
+<table>
+  <tr><th>Client</th><th>Chat ID</th><th>Bot Token</th><th>Drive Root</th><th>Status</th></tr>
+  <tr><td>AFH_22 (Test)</td><td><code>-1004391863263</code></td><td><code>8669... (test bot)</code></td><td><code>1KQ3fGvsCw... (Employee Records)</code></td><td><span class="tag">Ready for testing</span></td></tr>
+  <tr><td>Edmonds Villa</td><td><code>-1004370903054</code></td><td><code>8870... (prod bot)</code></td><td><code>1V-pKZ5-MEH... (EMPLOYEE RECORDS)</code></td><td><span class="tag">Configured, not yet started</span></td></tr>
+</table>
+
+<p>Each client gets its own Telegram bot token and systemd service instance. The <code>config.json</code> and Drive service account are shared. Client isolation is by (a) chat ID routing and (b) Drive folder permissions on the SA.</p>
+
+<h2>Observability</h2>
+
+<ul>
+  <li><strong>Logging:</strong> Python <code>logging</code> module at INFO level, output to journald via systemd. View with <code>journalctl -u employee-docs-bot -f</code>.</li>
+  <li><strong>Failed classifications:</strong> Logged at WARNING level with the error and document info.</li>
+  <li><strong>Drive API errors:</strong> Caught and reported to the user via Telegram message + logged.</li>
+  <li><strong>Service health:</strong> systemd auto-restart on failure (RestartSec=10). No external monitoring configured.</li>
+</ul>
+
+<h2>Configuration Reference</h2>
+
+<h3><code>.env</code></h3>
+<pre>TELEGRAM_BOT_TOKEN=8669018731:AAEAJCRcIb44t-RGwY3LsRhTEx3jGm7BIDk
+DEEPSEEK_API_KEY=sk-your-deepseek-api-key
+ANTHROPIC_VISION_API_KEY=sk-ant-your-anthropic-vision-api-key</pre>
+
+<h3><code>config.json</code> (schema)</h3>
+<pre>{
+  "clients": [
+    {
+      "chat_id": &lt;integer&gt;,
+      "name": &lt;string&gt;,
+      "drive_root_id": &lt;string&gt;,
+      "service_account_key_file": &lt;string&gt;,
+      "providers": [&lt;string&gt;, ...],
+      "cat_keywords": {
+        "01 - Identity &amp; Employment": [&lt;string&gt;, ...],
+        ...
+      }
+    }
+  ]
+}</pre>
+
+<h2>Glossary</h2>
+
+<table>
+  <tr><th>Term</th><th>Definition</th></tr>
+  <tr><td><strong>Client</strong></td><td>An adult family home (AFH) using the bot. Each has its own Telegram chat, Google Drive folder, and config entry.</td></tr>
+  <tr><td><strong>Document</strong></td><td>A single file sent to Telegram — photo, PDF, or DOCX. Processed independently.</td></tr>
+  <tr><td><strong>New Employee</strong></td><td>A name detected in a document that doesn't match any folder in the Drive roster. Triggers automatic folder creation.</td></tr>
+  <tr><td><strong>Provider</strong></td><td>AFH owner/administrator (currently Sandra). Subject to additional WAC requirements including 54-hour administrator training.</td></tr>
+  <tr><td><strong>WAC Category</strong></td><td>One of 8 document categories defined by Washington Administrative Code chapters 388-76 and 388-112A.</td></tr>
+  <tr><td><strong>rules match</strong></td><td>Classification by keyword matching against employee roster and category keyword list. Fast but may be ambiguous.</td></tr>
+  <tr><td><strong>LLM match</strong></td><td>Classification by DeepSeek LLM. Slower but handles edge cases rules miss.</td></tr>
+</table>
+
+<h2>Pending Pre-Production Items</h2>
+
+<ul>
+  <li><span class="tag">TODO</span> <strong>Start the test service:</strong> <code>sudo systemctl start employee-docs-bot</code></li>
+  <li><span class="tag">TODO</span> <strong>First document test:</strong> Send a CPR card photo to the afh-22-employee-docs channel</li>
+  <li><span class="tag">TODO</span> <strong>Create production systemd instance:</strong> Copy the service file, swap to <code>.env.prod</code> with production token</li>
+  <li><span class="tag">TODO</span> <strong>Test HEIC photo:</strong> Send an iPhone photo to verify HEIC → JPEG → OCR pipeline</li>
+  <li><span class="tag">TODO</span> <strong>Config naming:</strong> Rename <code>edmonds-villa-sa.json</code> → <code>employee-docs-bot-sa.json</code> to reflect shared nature</li>
+</ul>
+
+</body>
+</html>

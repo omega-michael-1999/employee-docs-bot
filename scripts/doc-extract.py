@@ -9,6 +9,24 @@ import sys, os, json, base64, io, re, zipfile, xml.etree.ElementTree as ET
 from datetime import date
 import urllib.request, urllib.error
 
+# HEIC/HEIF support (pillow-heif optional — degrades gracefully if missing)
+try:
+    from pillow_heif import open_heif as _open_heif
+    _HAS_HEIF = True
+except ImportError:
+    _HAS_HEIF = False
+
+def _convert_heic(path):
+    """Convert a HEIC/HEIF file to JPEG bytes. Returns (jpeg_bytes, mime) or raises."""
+    if not _HAS_HEIF:
+        raise RuntimeError("pillow-heif not installed; install it for HEIC/HEIF support")
+    heif = _open_heif(path)
+    from PIL import Image
+    img = Image.frombytes(heif.mode, heif.size, heif.data)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=95)
+    return buf.getvalue(), "image/jpeg"
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: doc-extract.py <file> [prompt]", file=sys.stderr)
@@ -36,7 +54,7 @@ def main():
         result = extract_pdf(path, prompt)
     elif ext == 'docx':
         result = extract_docx(path)
-    elif ext in ('jpg', 'jpeg', 'png', 'tiff', 'tif', 'bmp', 'gif', 'webp'):
+    elif ext in ('jpg', 'jpeg', 'png', 'tiff', 'tif', 'bmp', 'gif', 'webp', 'heic', 'heif'):
         result = extract_image(path, prompt)
     elif ext in ('txt', 'html', 'htm', 'xml', 'json', 'csv'):
         result = extract_text(path)
@@ -123,20 +141,29 @@ def extract_image(path, prompt):
     api_key = os.environ.get("ANTHROPIC_VISION_API_KEY")
     if not api_key:
         return None
-    mime = "image/jpeg"
-    if path.lower().endswith('.png'):
-        mime = "image/png"
-    elif path.lower().endswith(('.tiff', '.tif')):
-        mime = "image/tiff"
-    elif path.lower().endswith('.webp'):
-        mime = "image/webp"
-    elif path.lower().endswith('.bmp'):
-        mime = "image/bmp"
-    elif path.lower().endswith('.gif'):
-        mime = "image/gif"
 
-    with open(path, "rb") as f:
-        img_data = f.read()
+    ext = path.lower()
+    # HEIC/HEIF → convert to JPEG
+    if ext.endswith(('.heic', '.heif')):
+        try:
+            img_data, mime = _convert_heic(path)
+        except Exception as e:
+            return f"ERROR: HEIC conversion failed: {e}"
+    else:
+        mime = "image/jpeg"
+        if ext.endswith('.png'):
+            mime = "image/png"
+        elif ext.endswith(('.tiff', '.tif')):
+            mime = "image/tiff"
+        elif ext.endswith('.webp'):
+            mime = "image/webp"
+        elif ext.endswith('.bmp'):
+            mime = "image/bmp"
+        elif ext.endswith('.gif'):
+            mime = "image/gif"
+
+        with open(path, "rb") as f:
+            img_data = f.read()
 
     text = vision_ocr(img_data, mime, api_key, prompt)
     if text:

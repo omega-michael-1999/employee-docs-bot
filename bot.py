@@ -512,7 +512,7 @@ def extract_text(file_path):
 
     result = subprocess.run(
         [sys.executable, str(script), file_path],
-        capture_output=True, text=True, timeout=120
+        capture_output=True, text=True, timeout=300
     )
 
     if result.returncode != 0:
