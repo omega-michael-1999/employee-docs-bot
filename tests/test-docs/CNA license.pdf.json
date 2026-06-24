@@ -1,0 +1,15 @@
+{
+  "source_file": "CNA license.pdf",
+  "text_length": 1247,
+  "text_preview": "05/06/2026\nSubject: Credential Verification\nTo Whom It May Concern:\nThis verifies the status of the Nursing Assistant Certification for Jayden Kambi Omondi.\nThis site is a Primary Source for Verificat...",
+  "rules": {
+    "employee": null,
+    "category": "01 - Identity & Employment",
+    "confidence": null
+  },
+  "llm": {
+    "used": true,
+    "employee": null,
+    "category": "01 - Identity & Employment"
+  }
+}

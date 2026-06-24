@@ -1,0 +1,15 @@
+{
+  "source_file": "WhatsApp Image 2026-06-06 at 3.31.14 PM (3).jpeg",
+  "text_length": 466,
+  "text_preview": "# Certificate Details\n\n**Recipient:** PHILOMENA JOSEPH RENAUX\n\n**Issuing Organization:** Washington State Department of Social & Health Services\n\n**Course Completed:** Nurse Delegation Core\n\n**Hours:*...",
+  "rules": {
+    "employee": "Philomena Joseph Renaux",
+    "category": "02 - Background Check",
+    "confidence": "high"
+  },
+  "llm": {
+    "used": false,
+    "employee": null,
+    "category": null
+  }
+}

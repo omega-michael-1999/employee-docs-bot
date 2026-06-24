@@ -1,0 +1,15 @@
+{
+  "source_file": "FATOU TB TEST.pdf",
+  "text_length": 1082,
+  "text_preview": "# Lab Order - QuantiFERON\u00ae-TB Gold (86480)\n\n**Patient:** Fatou Manneh\n\n**Status:** Final, Reviewed\n\n**Diagnosis:** Screening examination for pulmonary tuberculosis (Z11.1)\n\n**Ordered by:** Laura Berna...",
+  "rules": {
+    "employee": "Fatou Manneh",
+    "category": "03 - Health Screening",
+    "confidence": "high"
+  },
+  "llm": {
+    "used": false,
+    "employee": null,
+    "category": null
+  }
+}

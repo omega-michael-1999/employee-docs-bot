@@ -1,0 +1,15 @@
+{
+  "source_file": "WhatsApp Image 2026-06-06 at 3.31.15 PM (2).jpeg",
+  "text_length": 571,
+  "text_preview": "# Washington Identification Card - Extracted Information\n\n**Card Details:**\n- State: Washington (WA, USA)\n- Card Type: Identification Card\n- Federal Limits Apply\n\n**Personal Information:**\n- Name: Phi...",
+  "rules": {
+    "employee": "Philomena Joseph Renaux",
+    "category": "01 - Identity & Employment",
+    "confidence": "low"
+  },
+  "llm": {
+    "used": true,
+    "employee": "Philomena Joseph Renaux",
+    "category": "01 - Identity & Employment"
+  }
+}

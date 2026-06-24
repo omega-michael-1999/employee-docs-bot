@@ -1,0 +1,15 @@
+{
+  "source_file": "7-25-26 Food Handler's card.pdf",
+  "text_length": 586,
+  "text_preview": "# Washington State Food Worker Card - Text Extraction\n\n**Header:**\n- Tacoma-Pierce County Health Department\n- \"Healthy People in Healthy Communities\"\n- Washington State Food Worker Card\n\n**Card Detail...",
+  "rules": {
+    "employee": "Nicholas Kachu Khamali",
+    "category": "05 - Orientation & Training",
+    "confidence": "high"
+  },
+  "llm": {
+    "used": false,
+    "employee": null,
+    "category": null
+  }
+}

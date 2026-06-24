@@ -1,0 +1,15 @@
+{
+  "source_file": "DSHS Auth.pdf",
+  "text_length": 4877,
+  "text_preview": "Section 1. Required: Applicant Information\n (All sections completed by the applicant, the person receiving a background check).  The \nrequesting entity will submit the applicant\n\u2019\ns information throug...",
+  "rules": {
+    "employee": null,
+    "category": "01 - Identity & Employment",
+    "confidence": null
+  },
+  "llm": {
+    "used": true,
+    "employee": null,
+    "category": "01 - Identity & Employment"
+  }
+}

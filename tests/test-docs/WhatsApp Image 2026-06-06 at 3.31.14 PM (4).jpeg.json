@@ -1,0 +1,15 @@
+{
+  "source_file": "WhatsApp Image 2026-06-06 at 3.31.14 PM (4).jpeg",
+  "text_length": 705,
+  "text_preview": "# Certificate Text Extraction\n\n**Header:**\n- THIS CERTIFICATE IS PRESENTED TO\n\n**Main Seal:**\n- Seal of the United States of America with \"Sea of Training\" visible\n\n**Certificate Details:**\n- **Signat...",
+  "rules": {
+    "employee": null,
+    "category": "06 - HCA Certification & CE",
+    "confidence": null
+  },
+  "llm": {
+    "used": true,
+    "employee": "Philomena Joseph Renaux",
+    "category": "06 - HCA Certification & CE"
+  }
+}

@@ -4,6 +4,7 @@ __pycache__/
 config.local.json
 *.json
 !config.example.json
+!tests/test-docs/*.json
 !*.service
 .service-account-keys/
 data/
