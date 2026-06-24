@@ -31,6 +31,9 @@ with open(CONFIG_FILE) as f:
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_VISION_API_KEY", "")
 
+# Heartbeat monitoring (push-based — bot pings this URL every 5 min)
+HEARTBEAT_URL = os.environ.get("HEARTBEAT_URL", "")
+
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     level=logging.INFO,
@@ -950,6 +953,29 @@ def match_category(text, cat_keywords):
     return None
 
 
+# --- Heartbeat / External Monitoring ---
+
+async def heartbeat_task(app):
+    """Periodic heartbeat ping to external monitoring service.
+
+    Runs every 5 minutes if HEARTBEAT_URL is configured.
+    Pings the URL with a simple GET — the monitoring service
+    alerts if it stops receiving pings (bot crash, API key expiry,
+    or process hang).
+    """
+    import urllib.request
+    while True:
+        await asyncio.sleep(300)  # 5 minutes
+        if not HEARTBEAT_URL:
+            continue
+        try:
+            req = urllib.request.Request(HEARTBEAT_URL, method="GET")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                log.debug(f"Heartbeat OK ({resp.status})")
+        except Exception as e:
+            log.warning(f"Heartbeat failed: {e}")
+
+
 def get_client_config(chat_id):
     """Get client config by chat_id."""
     for c in CONFIG["clients"]:
@@ -1050,6 +1076,13 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.MimeType("application/pdf") | filters.Document.Category("image/"), handle_document))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+
+    # Start heartbeat monitoring (pings every 5 min)
+    if HEARTBEAT_URL:
+        heartbeat_handle = asyncio.ensure_future(heartbeat_task(app))
+        log.info(f"Heartbeat monitoring active → {HEARTBEAT_URL}")
+    else:
+        log.info("No HEARTBEAT_URL set — monitoring disabled")
 
     log.info("Bot started")
     app.run_polling()

@@ -107,6 +107,7 @@
     <li><strong>SQLite-based state persistence.</strong> Pending classifications survive crashes and restarts. One <code>pending.db</code> file at <code>/opt/employee-docs-bot/data/</code>. Documents older than 24 hours are cleaned up on startup.</li>
     <li><strong>Per-chat state machine with explicit ChatState enum.</strong> Replaces fragile multi-key pending dict with a single <code>ChatSession</code> per chat_id. <code>asyncio.Lock</code> per chat prevents race conditions on concurrent state transitions.</li>
     <li><strong>Document UUID tracing.</strong> Each document receives a <code>doc_xxx</code> UUID at pipeline entry, passed through every log line. Enables per-document tracing via <code>grep doc_abc123 journalctl</code>.</li>
+    <li><strong>External heartbeat monitoring.</strong> Bot pings a configurable <code>HEARTBEAT_URL</code> every 5 minutes via a background asyncio task. If pings stop (crash, hang, API key expiry), the monitoring service alerts via SMS/email. Compatible with UptimeRobot heartbeat URLs, healthchecks.io, or any HTTP endpoint.</li>
   </ul>
 
   <h3>Document Processing Pipeline</h3>

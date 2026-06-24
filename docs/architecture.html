@@ -253,6 +253,7 @@ WantedBy=multi-user.target</pre>
     <tr><td>PyMuPDF</td><td>Render PDF pages for vision OCR</td><td>—</td></tr>
     <tr><td>PyPDF2</td><td>Extract text from digital PDFs</td><td>—</td></tr>
     <tr><td>Pillow + pillow-heif</td><td>HEIC/HEIF to JPEG conversion</td><td>—</td></tr>
+    <tr><td>External monitoring (optional)</td><td>Heartbeat health check (bot pings URL every 5 min)</td><td><code>HEARTBEAT_URL</code> in <code>.env</code></td></tr>
   </table>
 </div>
 
@@ -291,7 +292,8 @@ WantedBy=multi-user.target</pre>
     <li><strong>Logging:</strong> Python <code>logging</code> at INFO level to journald. View: <code>journalctl -u employee-docs-bot -f</code>.</li>
     <li><strong>Failed classifications:</strong> Logged at WARNING with error and document metadata.</li>
     <li><strong>Drive errors:</strong> Caught and reported to the user via Telegram + logged.</li>
-    <li><strong>Service health:</strong> systemd auto-restart (RestartSec=10). External monitoring via UptimeRobot (pings every 5 min, SMS/email alerts).</li>
+    <li><strong>Service health:</strong> systemd auto-restart (RestartSec=10). Heartbeat monitoring: bot pings <code>HEARTBEAT_URL</code> every 5 minutes via background asyncio task. Monitoring service (UptimeRobot, healthchecks.io, etc.) alerts on missed pings.</li>
+    <li><strong>Heartbeat config:</strong> Set <code>HEARTBEAT_URL</code> in <code>.env</code>. Example: <code>HEARTBEAT_URL=https://hc-ping.com/your-uuid</code>. If unset, monitoring is disabled.</li>
   </ul>
 </div>
 
@@ -317,6 +319,7 @@ WantedBy=multi-user.target</pre>
     <tr><td>Multi-tenant config.json with chat IDs</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>HEIC support + Anthropic vision key set</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>systemd service installed, passwordless sudo</td><td><span class="tag tag-green">Done</span></td></tr>
+    <tr><td>Heartbeat monitoring configured (HEARTBEAT_URL)</td><td><span class="tag tag-amber">Pending</span></td></tr>
   </table>
 </div>
 
