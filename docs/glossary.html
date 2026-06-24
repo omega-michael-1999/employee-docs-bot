@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Docs Bot — Glossary</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+  h2 { margin-top: 36px; color: #333; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; font-weight: 600; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .tag { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Employee Docs Bot — Glossary</h1>
+
+<h2>Domain Terms</h2>
+
+<table>
+  <tr><th>Term</th><th>Definition</th></tr>
+  <tr><td><strong>Client</strong></td><td>An adult family home (AFH) using the bot. Each has its own Telegram chat and Google Drive folder. Config-driven in <code>config.json</code>.</td></tr>
+  <tr><td><strong>Document</strong></td><td>A single file sent to the Telegram channel — photo, PDF, or DOCX. Each processed independently even if sent in a batch.</td></tr>
+  <tr><td><strong>Sandra</strong></td><td>Primary human user. The bot's confirmation flow is designed around her phone-based workflow.</td></tr>
+  <tr><td><strong>New Employee</strong></td><td>A name detected in a document that doesn't match any folder in the client's Drive roster. Triggers automatic folder creation and onboarding flow.</td></tr>
+</table>
+
+<h2>Architecture</h2>
+
+<table>
+  <tr><th>Term</th><th>Decision</th></tr>
+  <tr><td><strong>Bot Runtime</strong></td><td>Single Python script using <code>python-telegram-bot</code>. One systemd service per Telegram bot token (test + production), each sharing the same <code>config.json</code>.</td></tr>
+  <tr><td><strong>Document Classification</strong></td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if employee or category is ambiguous (partial name, weak keyword, multiple candidates) the rules result is treated as a hint and elevated to DeepSeek LLM, (3) if LLM also fails → manual inline-keyboard correction flow. Rules never bypass the LLM when confidence is low.</td></tr>
+  <tr><td><strong>OCR / Text Extraction</strong></td><td><code>doc-extract.py</code> — forked into the bot repo from ai-os. Uses PyMuPDF + Anthropic Haiku vision API for scanned docs. HEIC/HEIF supported via <code>pillow-heif</code>.</td></tr>
+  <tr><td><strong>Drive Auth</strong></td><td>Single Google service account shared by all clients. Access is controlled at the Drive folder level (each client's folder shared individually). No interactive login needed.</td></tr>
+  <tr><td><strong>Drive API</strong></td><td>Direct <code>google-api-python-client</code> calls, not <code>gws</code> CLI.</td></tr>
+  <tr><td><strong>Confirmation UX</strong></td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts: first the employee name, then the document type.</td></tr>
+  <tr><td><strong>Employee Roster</strong></td><td>Scanned from Drive folder names at runtime. New names (not in any folder) trigger the "new employee?" onboarding question. Providers are flagged in <code>config.json</code> for audit purposes.</td></tr>
+  <tr><td><strong>Provider vs. Caregiver</strong></td><td>No structural folder split. Filing uses the same 8-category structure for everyone. Config marks provider names (<code>"providers": ["Sandra Namwase"]</code>). Audit checks providers against categories 01–08 + facility-level docs (insurance, succession plan, emergency plan). Caregivers checked against 01–07 only.</td></tr>
+  <tr><td><strong>Multi-Tenancy</strong></td><td>Single bot binary. Client config in <code>config.json</code> keyed by Telegram chat_id.</td></tr>
+</table>
+
+<h2>WAC Categories (8)</h2>
+
+<table>
+  <tr><th>Code</th><th>Name</th></tr>
+  <tr><td>01</td><td>Identity &amp; Employment</td></tr>
+  <tr><td>02</td><td>Background Check</td></tr>
+  <tr><td>03</td><td>Health Screening (TB)</td></tr>
+  <tr><td>04</td><td>CPR &amp; First Aid</td></tr>
+  <tr><td>05</td><td>Orientation &amp; Training</td></tr>
+  <tr><td>06</td><td>HCA Certification &amp; CE</td></tr>
+  <tr><td>07</td><td>Nurse Delegation</td></tr>
+  <tr><td>08</td><td>Administrator Training (provider only)</td></tr>
+</table>
+
+<h2>File Naming</h2>
+<p><code>{Employee Full Name} - {Document Description}.{ext}</code></p>
+
+</body>
+</html>
