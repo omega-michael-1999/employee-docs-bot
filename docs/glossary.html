@@ -3,65 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Employee Docs Bot — Glossary</title>
+<title>Glossary — Employee Docs Bot | Omega Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
-  h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
-  h2 { margin-top: 36px; color: #333; }
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
-  th { background: #f5f5f5; font-weight: 600; }
-  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 4px; }
-  .tag { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.7; }
+  .header { background: linear-gradient(135deg, #0f172a 0%, #1a237e 100%); color: #fff; padding: 64px 24px 48px; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(14,165,233,0.12) 0%, transparent 70%); pointer-events: none; }
+  .header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; position: relative; }
+  .header p { font-size: 1.05rem; color: #94a3b8; font-weight: 400; position: relative; }
+  .header .badge { display: inline-block; background: rgba(14,165,233,0.15); color: #38BDF8; font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
+  .nav-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; position: sticky; top: 0; z-index: 10; }
+  .nav-bar-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .nav-bar a:hover, .nav-bar a.active { color: #0284C7; border-bottom-color: #0284C7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .section { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; margin-bottom: 28px; }
+  .section h2 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section h2 .accent { display: inline-block; width: 4px; height: 24px; background: linear-gradient(180deg, #0284C7, #38BDF8); border-radius: 2px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; color: #0f172a; white-space: nowrap; }
+  code { background: #f1f5f9; color: #0284C7; padding: 2px 8px; border-radius: 6px; font-size: 0.82em; font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+  .tag-provider { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; margin-left: 4px; }
+  .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .cat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+  .cat-code { font-size: 1.5rem; font-weight: 800; color: #0284C7; line-height: 1; min-width: 36px; }
+  .cat-name { font-size: 0.9rem; font-weight: 500; color: #1e293b; }
+  .cat-note { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+  .footer { text-align: center; padding: 32px 24px; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; }
+  .footer a { color: #0284C7; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } td:first-child { white-space: normal; } .cat-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
-<h1>Employee Docs Bot — Glossary</h1>
+<div class="header">
+  <div class="badge">Reference</div>
+  <h1>Employee Docs Bot — Glossary</h1>
+  <p>Domain terms, architecture decisions, and WAC category reference</p>
+</div>
 
-<h2>Domain Terms</h2>
+<div class="nav-bar">
+  <div class="nav-bar-inner">
+    <a href="glossary.html" class="active">Glossary</a>
+    <a href="prd.html">PRD</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+</div>
 
-<table>
-  <tr><th>Term</th><th>Definition</th></tr>
-  <tr><td><strong>Client</strong></td><td>An adult family home (AFH) using the bot. Each has its own Telegram chat and Google Drive folder. Config-driven in <code>config.json</code>.</td></tr>
-  <tr><td><strong>Document</strong></td><td>A single file sent to the Telegram channel — photo, PDF, or DOCX. Each processed independently even if sent in a batch.</td></tr>
-  <tr><td><strong>Sandra</strong></td><td>Primary human user. The bot's confirmation flow is designed around her phone-based workflow.</td></tr>
-  <tr><td><strong>New Employee</strong></td><td>A name detected in a document that doesn't match any folder in the client's Drive roster. Triggers automatic folder creation and onboarding flow.</td></tr>
-</table>
+<div class="container">
 
-<h2>Architecture</h2>
+<div class="section">
+  <h2><span class="accent"></span>Domain Terms</h2>
+  <table>
+    <tr><th>Term</th><th>Definition</th></tr>
+    <tr><td>Client</td><td>An adult family home (AFH) using the bot. Each has its own Telegram chat and Google Drive folder. Config-driven in <code>config.json</code>.</td></tr>
+    <tr><td>Document</td><td>A single file sent to the Telegram channel — photo, PDF, or DOCX. Each processed independently even if sent in a batch.</td></tr>
+    <tr><td>Sandra</td><td>Primary human user. The bot's confirmation flow is designed around her phone-based workflow.</td></tr>
+    <tr><td>New Employee</td><td>A name detected in a document that doesn't match any folder in the client's Drive roster. Triggers automatic folder creation and onboarding flow.</td></tr>
+  </table>
+</div>
 
-<table>
-  <tr><th>Term</th><th>Decision</th></tr>
-  <tr><td><strong>Bot Runtime</strong></td><td>Single Python script using <code>python-telegram-bot</code>. One systemd service per Telegram bot token (test + production), each sharing the same <code>config.json</code>.</td></tr>
-  <tr><td><strong>Document Classification</strong></td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if employee or category is ambiguous (partial name, weak keyword, multiple candidates) the rules result is treated as a hint and elevated to DeepSeek LLM, (3) if LLM also fails → manual inline-keyboard correction flow. Rules never bypass the LLM when confidence is low.</td></tr>
-  <tr><td><strong>OCR / Text Extraction</strong></td><td><code>doc-extract.py</code> — forked into the bot repo from ai-os. Uses PyMuPDF + Anthropic Haiku vision API for scanned docs. HEIC/HEIF supported via <code>pillow-heif</code>.</td></tr>
-  <tr><td><strong>Drive Auth</strong></td><td>Single Google service account shared by all clients. Access is controlled at the Drive folder level (each client's folder shared individually). No interactive login needed.</td></tr>
-  <tr><td><strong>Drive API</strong></td><td>Direct <code>google-api-python-client</code> calls, not <code>gws</code> CLI.</td></tr>
-  <tr><td><strong>Confirmation UX</strong></td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts: first the employee name, then the document type.</td></tr>
-  <tr><td><strong>Employee Roster</strong></td><td>Scanned from Drive folder names at runtime. New names (not in any folder) trigger the "new employee?" onboarding question. Providers are flagged in <code>config.json</code> for audit purposes.</td></tr>
-  <tr><td><strong>Provider vs. Caregiver</strong></td><td>No structural folder split. Filing uses the same 8-category structure for everyone. Config marks provider names (<code>"providers": ["Sandra Namwase"]</code>). Audit checks providers against categories 01–08 + facility-level docs (insurance, succession plan, emergency plan). Caregivers checked against 01–07 only.</td></tr>
-  <tr><td><strong>Multi-Tenancy</strong></td><td>Single bot binary. Client config in <code>config.json</code> keyed by Telegram chat_id.</td></tr>
-</table>
+<div class="section">
+  <h2><span class="accent"></span>Architecture</h2>
+  <table>
+    <tr><th>Decision</th><th>Choice</th></tr>
+    <tr><td>Bot Runtime</td><td>Single Python script using <code>python-telegram-bot</code>. One systemd service per Telegram bot token (test + production), each sharing the same <code>config.json</code>.</td></tr>
+    <tr><td>Document Classification</td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if ambiguous, the rules result is treated as a hint and elevated to DeepSeek LLM, (3) if LLM fails → manual inline-keyboard correction.</td></tr>
+    <tr><td>OCR / Text Extraction</td><td><code>doc-extract.py</code>. Uses PyMuPDF + Anthropic Haiku vision for scanned docs. HEIC/HEIF via <code>pillow-heif</code>.</td></tr>
+    <tr><td>Drive Auth</td><td>Single Google service account shared by all clients. Access controlled at the Drive folder level.</td></tr>
+    <tr><td>Confirmation UX</td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts.</td></tr>
+    <tr><td>Employee Roster</td><td>Scanned from Drive folder names at runtime. Providers flagged in <code>config.json</code> for audit.</td></tr>
+    <tr><td>Provider vs. Caregiver</td><td>No structural folder split. Config marks providers (<code>"providers": ["Sandra Namwase"]</code>). Audit checks 01–08 + facility docs for providers, 01–07 for caregivers.</td></tr>
+    <tr><td>Multi-Tenancy</td><td>Single bot binary. Client config in <code>config.json</code> keyed by Telegram chat_id.</td></tr>
+  </table>
+</div>
 
-<h2>WAC Categories (8)</h2>
+<div class="section">
+  <h2><span class="accent"></span>WAC Categories</h2>
+  <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Washington Administrative Code chapters 388-76 and 388-112A define 8 document categories for AFH personnel records.</p>
+  <div class="cat-grid">
+    <div class="cat-card"><div class="cat-code">01</div><div><div class="cat-name">Identity &amp; Employment</div><div class="cat-note">Photo ID, W-2, I-9, application</div></div></div>
+    <div class="cat-card"><div class="cat-code">02</div><div><div class="cat-name">Background Check</div><div class="cat-note">WA name/DOB + national fingerprint</div></div></div>
+    <div class="cat-card"><div class="cat-code">03</div><div><div class="cat-name">Health Screening</div><div class="cat-note">TB test within 3 days of hire</div></div></div>
+    <div class="cat-card"><div class="cat-code">04</div><div><div class="cat-name">CPR &amp; First Aid</div><div class="cat-note">Valid certs required</div></div></div>
+    <div class="cat-card"><div class="cat-code">05</div><div><div class="cat-name">Orientation &amp; Training</div><div class="cat-note">70-hr basic training, HCA, specialty</div></div></div>
+    <div class="cat-card"><div class="cat-code">06</div><div><div class="cat-name">HCA Certification &amp; CE</div><div class="cat-note">Cert within 200 days, 12 hrs CE/yr</div></div></div>
+    <div class="cat-card"><div class="cat-code">07</div><div><div class="cat-name">Nurse Delegation</div><div class="cat-note">If performing delegated tasks</div></div></div>
+    <div class="cat-card"><div class="cat-code">08</div><div><div class="cat-name">Administrator Training <span class="tag-provider">provider</span></div><div class="cat-note">54-hr DSHS-approved admin course</div></div></div>
+  </div>
+</div>
 
-<table>
-  <tr><th>Code</th><th>Name</th></tr>
-  <tr><td>01</td><td>Identity &amp; Employment</td></tr>
-  <tr><td>02</td><td>Background Check</td></tr>
-  <tr><td>03</td><td>Health Screening (TB)</td></tr>
-  <tr><td>04</td><td>CPR &amp; First Aid</td></tr>
-  <tr><td>05</td><td>Orientation &amp; Training</td></tr>
-  <tr><td>06</td><td>HCA Certification &amp; CE</td></tr>
-  <tr><td>07</td><td>Nurse Delegation</td></tr>
-  <tr><td>08</td><td>Administrator Training (provider only)</td></tr>
-</table>
+<div class="section">
+  <h2><span class="accent"></span>File Naming</h2>
+  <p style="font-family:'JetBrains Mono','SF Mono',monospace; background:#f1f5f9; padding:14px 18px; border-radius:8px; font-size:0.9rem; color:#0f172a;">
+    {Employee Full Name} - {WAC Category or Description}.{ext}
+  </p>
+  <p style="color:#64748b; font-size:0.85rem; margin-top:10px;">
+    Example: <code>Fatou Manneh - 04 - CPR &amp; First Aid.pdf</code><br>
+    Companion: <code>Fatou Manneh - 04 - CPR &amp; First Aid-robot.txt</code>
+  </p>
+</div>
 
-<h2>File Naming</h2>
-<p><code>{Employee Full Name} - {Document Description}.{ext}</code></p>
+</div>
+
+<div class="footer">
+  <p>Employee Docs Bot — <a href="https://omegadigital.ai">Omega Digital Services</a></p>
+</div>
 
 </body>
 </html>

@@ -3,177 +3,197 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRD — Employee Docs Bot</title>
+<title>PRD — Employee Docs Bot | Omega Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
-  h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
-  h2 { margin-top: 36px; color: #333; }
-  h3 { margin-top: 24px; color: #555; }
-  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
-  th { background: #f5f5f5; }
-  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
-  .meta { color: #777; font-size: 0.9em; }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 4px; }
-  .status-ok { color: #2e7d32; }
-  .status-pending { color: #e65100; }
-  .status-empty { color: #c62828; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.7; }
+  .header { background: linear-gradient(135deg, #0f172a 0%, #1a237e 100%); color: #fff; padding: 64px 24px 48px; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(14,165,233,0.12) 0%, transparent 70%); pointer-events: none; }
+  .header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; position: relative; }
+  .header p { font-size: 1.05rem; color: #94a3b8; position: relative; }
+  .header .badge { display: inline-block; background: rgba(14,165,233,0.15); color: #38BDF8; font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; }
+  .header .meta { font-size: 0.82rem; color: #64748b; margin-top: 12px; position: relative; }
+  .nav-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; position: sticky; top: 0; z-index: 10; }
+  .nav-bar-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .nav-bar a:hover, .nav-bar a.active { color: #0284C7; border-bottom-color: #0284C7; }
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .section { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; margin-bottom: 28px; }
+  .section h2 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section h2 .accent { display: inline-block; width: 4px; height: 24px; background: linear-gradient(180deg, #0284C7, #38BDF8); border-radius: 2px; }
+  .section h3 { font-size: 1rem; font-weight: 600; color: #334155; margin: 20px 0 10px; }
+  p { margin-bottom: 14px; color: #475569; font-size: 0.92rem; }
+  ol { padding-left: 24px; margin-bottom: 16px; }
+  ol li { margin-bottom: 10px; font-size: 0.9rem; color: #475569; padding-left: 6px; }
+  ol li strong { color: #1e293b; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  code { background: #f1f5f9; color: #0284C7; padding: 2px 8px; border-radius: 6px; font-size: 0.82em; font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 20px; border-radius: 10px; font-size: 0.82rem; font-family: 'JetBrains Mono', 'SF Mono', monospace; overflow-x: auto; line-height: 1.5; margin: 16px 0; }
+  ul { padding-left: 20px; margin-bottom: 14px; }
+  ul li { margin-bottom: 6px; font-size: 0.9rem; color: #475569; }
+  .tag { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; }
+  .tag-green { background: #d1fae5; color: #065f46; }
+  .tag-amber { background: #fef3c7; color: #92400e; }
+  .story-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: linear-gradient(135deg, #0284C7, #38BDF8); color: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+  .footer { text-align: center; padding: 32px 24px; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; }
+  .footer a { color: #0284C7; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } }
 </style>
 </head>
 <body>
 
-<h1>Employee Docs Bot — Product Requirements Document</h1>
-<p class="meta"><strong>Date:</strong> 2026-06-24 &nbsp;|&nbsp; <strong>Status:</strong> Ready for implementation</p>
+<div class="header">
+  <div class="badge">Product Requirements</div>
+  <h1>Employee Docs Bot — PRD</h1>
+  <p>Automated document filing for AFH employee records</p>
+  <div class="meta">2026-06-24 &nbsp;·&nbsp; Status: <span class="tag tag-green">Ready for implementation</span></div>
+</div>
 
-<h2>Problem Statement</h2>
-<p>
-Sandra Namwase operates Edmonds Villa, an adult family home in Edmonds, WA. She is responsible for maintaining complete personnel files for ~16 employees against Washington State WAC 388-76 and 388-112A requirements. Currently, employee documents (CPR cards, TB test results, background checks, licenses, training certificates) arrive as photos and PDFs via Telegram. Sandra manually classifies each document by employee and category, renames it, and uploads it to the correct Google Drive folder. This takes 2–5 minutes per document, is error-prone, and creates a backlog when documents arrive in batches.
-</p>
-<p>
-The same problem exists for new AFH clients onboarding. Each client needs the same document filing workflow with their own Telegram channel and Drive folder. The solution must be multi-tenant from the start.
-</p>
+<div class="nav-bar">
+  <div class="nav-bar-inner">
+    <a href="glossary.html">Glossary</a>
+    <a href="prd.html" class="active">PRD</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+</div>
 
-<h2>Solution</h2>
-<p>
-A Telegram bot that receives employee documents (photos, PDFs, DOCX), automatically extracts text via OCR, classifies by employee name and WAC document category using a hybrid rules + LLM approach, confirms the classification with Sandra via inline buttons, and files the document into the correct Google Drive folder with proper naming. Sandra's interaction is minimal: send photo → tap 👍 or 👎 → done.
-</p>
+<div class="container">
 
-<h2>User Stories</h2>
+<div class="section">
+  <h2><span class="accent"></span>Problem Statement</h2>
+  <p>Sandra Namwase operates Edmonds Villa, an adult family home in Edmonds, WA. She maintains complete personnel files for ~16 employees against Washington State WAC 388-76 and 388-112A requirements. Employee documents (CPR cards, TB test results, background checks, training certificates) arrive as photos and PDFs via Telegram. Sandra manually classifies each document by employee and category, renames it, and uploads it to the correct Google Drive folder — taking 2–5 minutes per document. This is error-prone and creates backlog when documents arrive in batches.</p>
+  <p>The same problem exists for new AFH clients onboarding. Each client needs the same document filing workflow with their own Telegram channel and Drive folder. The solution must be multi-tenant from the start.</p>
+</div>
 
-<ol>
-  <li><strong>As Sandra</strong>, I want to send a photo of a CPR card to a Telegram channel and have it automatically filed to the correct employee's CPR folder in Drive, so that I don't have to manually rename and upload each document.</li>
+<div class="section">
+  <h2><span class="accent"></span>Solution</h2>
+  <p>A Telegram bot that receives employee documents, automatically extracts text via OCR, classifies by employee name and WAC document category using a hybrid rules + LLM approach, confirms the classification with Sandra via inline buttons, and files to the correct Google Drive folder. Sandra's interaction: send photo → tap 👍 or 👎 → done.</p>
+</div>
 
-  <li><strong>As Sandra</strong>, when the bot is uncertain about the employee or document type, I want to see a confirmation prompt with inline buttons, so that I can quickly correct any misclassification before filing.</li>
+<div class="section">
+  <h2><span class="accent"></span>User Stories</h2>
+  <ol>
+    <li><strong>As Sandra</strong>, I want to send a photo of a CPR card to a Telegram channel and have it automatically filed to the correct employee's CPR folder in Drive, so that I don't have to manually rename and upload each document.</li>
+    <li><strong>As Sandra</strong>, when the bot is uncertain about the employee or document type, I want to see a confirmation prompt with inline buttons, so that I can quickly correct any misclassification before filing.</li>
+    <li><strong>As Sandra</strong>, when the bot cannot identify the employee at all, I want to type the employee's name and document type, so that new or unrecognized staff documents still get filed correctly.</li>
+    <li><strong>As Sandra</strong>, when a document is for a new employee not yet in the Drive roster, I want the bot to create their folder structure automatically, so that I don't have to set up folders manually.</li>
+    <li><strong>As Sandra</strong>, I want the bot to work with HEIC photos from my iPhone, so that I can send documents directly from my camera without converting formats.</li>
+    <li><strong>As Sandra</strong>, I want to send multiple documents in sequence and have each one processed independently, so that batch filing is natural.</li>
+    <li><strong>As Sandra</strong>, when the bot makes a classification error, I want to correct it via a simple text conversation rather than editing Drive manually.</li>
+    <li><strong>As Sandra</strong>, I want the classified document to be filed with a companion <code>-robot.txt</code> containing the extracted text, so that the Drive is searchable and auditable.</li>
+    <li><strong>As an AFH owner onboarding a new client</strong>, I want to add a new client's Telegram chat ID and Drive folder to a config file, so that the same bot serves multiple AFHs without separate deployments.</li>
+    <li><strong>As an auditor</strong>, I want to run a compliance check against WAC 388-76 that knows which employees are providers (01–08 + facility docs) vs. caregivers (01–07 only), so that the audit respects regulatory differences.</li>
+    <li><strong>As Michael (operator)</strong>, I want the bot to run as a systemd service that auto-restarts on failure and logs to journald, so that it stays up without manual intervention.</li>
+    <li><strong>As Michael (operator)</strong>, I want classification to use rules for fast common cases and fall back to an LLM for ambiguous ones, so that accuracy is high without paying for an LLM call on every document.</li>
+    <li><strong>As Michael (operator)</strong>, I want the test and production clients as separate Telegram bot instances sharing the same config, so that testing doesn't interfere with live filing.</li>
+    <li><strong>As Michael (operator)</strong>, I want the deployment at <code>/opt/employee-docs-bot/</code> as a git checkout owned by my user, so that I can browse, edit, and git pull without permission hassles.</li>
+  </ol>
+</div>
 
-  <li><strong>As Sandra</strong>, when the bot cannot identify the employee at all, I want to type the employee's name and document type, so that new or unrecognized staff documents still get filed correctly.</li>
+<div class="section">
+  <h2><span class="accent"></span>Implementation Decisions</h2>
 
-  <li><strong>As Sandra</strong>, when a document is for a new employee not yet in the Drive roster, I want the bot to create their folder structure automatically, so that I don't have to set up folders manually.</li>
+  <h3>Architecture</h3>
+  <ul>
+    <li><strong>Single bot binary, one systemd instance per token.</strong> The same <code>bot.py</code> and <code>config.json</code> are shared. Each instance reads its own <code>.env</code> with a different <code>TELEGRAM_BOT_TOKEN</code>. Chat ID routing in <code>config.json</code> distinguishes clients.</li>
+    <li><strong>Multi-tenant from day one.</strong> <code>config.json</code> contains an array of client objects. No code changes needed to add a client.</li>
+    <li><strong>Shared Google service account.</strong> One SA key with Editor access to all client Drive folders. Folder-level permissions control isolation.</li>
+  </ul>
 
-  <li><strong>As Sandra</strong>, I want the bot to work with HEIC photos from my iPhone, so that I can send documents directly from my camera without converting formats.</li>
+  <h3>Document Processing Pipeline</h3>
+  <ol style="list-style-type:decimal; padding-left:20px;">
+    <li><strong>Receive</strong> — Telegram photo, PDF, or image file. HEIC supported via <code>pillow-heif</code>.</li>
+    <li><strong>Extract text</strong> — <code>doc-extract.py</code>: PyPDF2 for PDF text, Anthropic Haiku vision for scanned, native DOCX/TXT. 300s timeout.</li>
+    <li><strong>Classify</strong> — Three-tier: rules → LLM (if ambiguous) → manual correction.</li>
+    <li><strong>Confirm</strong> — Inline keyboard [👍 Yes] [👎 No]. Text correction flow if wrong.</li>
+    <li><strong>File</strong> — Upload to <code>DRIVE_ROOT/CAREGIVERS/{Employee}/{Category}/{Name} - {Description}.{ext}</code> + companion <code>-robot.txt</code>.</li>
+    <li><strong>Onboard new employee</strong> — Create employee folder with all 8 WAC subfolders if name not found.</li>
+  </ol>
 
-  <li><strong>As Sandra</strong>, I want to send multiple documents in sequence and have each one processed independently, so that batch filing is natural.</li>
+  <h3>Provider vs. Caregiver Model</h3>
+  <ul>
+    <li>No structural folder split. All filing under <code>CAREGIVERS/</code>.</li>
+    <li>Config marks providers in <code>"providers": ["Sandra Namwase"]</code>.</li>
+    <li>Audit checks providers against 01–08 + facility docs; caregivers against 01–07.</li>
+  </ul>
 
-  <li><strong>As Sandra</strong>, when the bot makes a classification error, I want to correct it via a simple text conversation (employee name → document type) rather than leaving the chat and editing Drive manually.</li>
+  <h3>WAC Categories</h3>
+  <table>
+    <tr><th>Code</th><th>Name</th><th>Required For</th></tr>
+    <tr><td>01</td><td>Identity &amp; Employment</td><td>All staff</td></tr>
+    <tr><td>02</td><td>Background Check</td><td>All staff</td></tr>
+    <tr><td>03</td><td>Health Screening (TB)</td><td>All staff</td></tr>
+    <tr><td>04</td><td>CPR &amp; First Aid</td><td>All staff</td></tr>
+    <tr><td>05</td><td>Orientation &amp; Training</td><td>All staff</td></tr>
+    <tr><td>06</td><td>HCA Certification &amp; CE</td><td>All staff</td></tr>
+    <tr><td>07</td><td>Nurse Delegation</td><td>All staff (if applicable)</td></tr>
+    <tr><td>08</td><td>Administrator Training</td><td>Providers only</td></tr>
+  </table>
 
-  <li><strong>As Sandra</strong>, I want the classified document to be filed as <code>{Employee Name} - {Document Type}.{ext}</code> with a companion <code>-robot.txt</code> containing the extracted text, so that the Drive is searchable and auditable.</li>
-
-  <li><strong>As an AFH owner onboarding a new client</strong>, I want to add a new client's Telegram chat ID and Drive folder to a config file, so that the same bot serves multiple AFHs without separate deployments.</li>
-
-  <li><strong>As an auditor</strong>, I want to run a compliance check against WAC 388-76 that knows which employees are providers (checked against categories 01–08 + facility docs) vs. caregivers (01–07 only), so that the audit respects regulatory differences.</li>
-
-  <li><strong>As Michael (operator)</strong>, I want the bot to run as a systemd service that auto-restarts on failure and logs to journald, so that it stays up without manual intervention.</li>
-
-  <li><strong>As Michael (operator)</strong>, I want the bot's classification to use rules for fast common cases and fall back to an LLM for ambiguous ones, so that accuracy is high without paying for an LLM call on every document.</li>
-
-  <li><strong>As Michael (operator)</strong>, I want the bot to handle the test AFH_22 client and the production Edmonds Villa client as separate Telegram bot instances sharing the same config, so that testing doesn't interfere with live filing.</li>
-
-  <li><strong>As Michael (operator)</strong>, I want to manage the deployment via <code>/opt/employee-docs-bot/</code> as a git checkout owned by my user, so that I can browse, edit, and git pull without permission hassles.</li>
-</ol>
-
-<h2>Implementation Decisions</h2>
-
-<h3>Architecture</h3>
-<ul>
-  <li><strong>Single bot binary, one systemd instance per Telegram token.</strong> The same <code>bot.py</code> and <code>config.json</code> are shared. Each instance reads its own <code>.env</code> with a different <code>TELEGRAM_BOT_TOKEN</code>. Chat ID routing in <code>config.json</code> distinguishes clients.</li>
-  <li><strong>Multi-tenant from day one.</strong> <code>config.json</code> contains an array of client objects, each with <code>chat_id</code>, <code>drive_root_id</code>, provider list, and category keywords. No code changes needed to add a client.</li>
-  <li><strong>Deployed at <code>/opt/employee-docs-bot/</code></strong> as a git checkout of <code>omega-michael-1999/employee-docs-bot</code>. Systemd service runs as <code>michael</code> user. Python venv at <code>.venv/</code>.</li>
-  <li><strong>Shared Google service account.</strong> One SA key (<code>employee-docs-bot@claude-ai-474917.iam.gserviceaccount.com</code>) has Editor access to all client Drive folders. Folder-level permissions control isolation, not per-client SAs.</li>
-</ul>
-
-<h3>Document Processing Pipeline</h3>
-<ol>
-  <li><strong>Receive</strong> — Telegram photo, PDF, or image file. HEIC supported via <code>pillow-heif</code> conversion to JPEG.</li>
-  <li><strong>Extract text</strong> — <code>doc-extract.py</code>: PyPDF2 for PDF text, Anthropic Haiku vision API for scanned PDFs and images, native for DOCX/TXT. 300s timeout for large docs.</li>
-  <li><strong>Classify</strong> — Three-tier hybrid approach:
-    <ul>
-      <li>Tier 1: Rules — word-boundary keyword matching against employee roster and category keywords.</li>
-      <li>Tier 2: LLM — if employee or category is ambiguous (partial name, weak keyword, multiple candidates), the rules result is treated as a hint and the full text is sent to DeepSeek for classification.</li>
-      <li>Tier 3: Manual — if LLM also fails, Sandra is prompted via inline buttons to enter the employee name and document type.</li>
-    </ul>
-  </li>
-  <li><strong>Confirm</strong> — Inline keyboard [👍 Yes] [👎 No]. Correction flow: (1) type employee name, (2) type document description, (3) bot maps to WAC category via keyword matching, (4) final confirmation.</li>
-  <li><strong>File</strong> — Upload to <code>DRIVE_ROOT/CAREGIVERS/{Employee}/{WAC Category}/{Name} - {Description}.{ext}</code>. Companion <code>-robot.txt</code> with extracted text always uploaded alongside.</li>
-  <li><strong>Onboard new employee</strong> — If name not found in Drive roster, bot creates employee folder with all 8 WAC category subfolders and files the document.</li>
-</ol>
-
-<h3>Provider vs. Caregiver Model</h3>
-<ul>
-  <li><strong>No structural folder split.</strong> Both providers and caregivers use the same 8-category folder structure under <code>CAREGIVERS/</code>.</li>
-  <li><strong>Config marks providers.</strong> <code>"providers": ["Sandra Namwase"]</code> in the client config.</li>
-  <li><strong>Audit-level distinction.</strong> Compliance checks verify providers against categories 01–08 + facility-level docs (liability insurance, succession plan, emergency plan, fire drills). Caregivers are checked against 01–07 only.</li>
-  <li><strong>Category 08 — Administrator Training</strong> (54-hour DSHS-approved course) is required for providers only, per WAC 388-112A-0800–0840.</li>
-</ul>
-
-<h3>WAC Category Schema (8 Categories)</h3>
-<table>
-  <tr><th>Code</th><th>Name</th><th>Required For</th></tr>
-  <tr><td>01</td><td>Identity &amp; Employment</td><td>All staff</td></tr>
-  <tr><td>02</td><td>Background Check</td><td>All staff</td></tr>
-  <tr><td>03</td><td>Health Screening (TB)</td><td>All staff</td></tr>
-  <tr><td>04</td><td>CPR &amp; First Aid</td><td>All staff</td></tr>
-  <tr><td>05</td><td>Orientation &amp; Training</td><td>All staff</td></tr>
-  <tr><td>06</td><td>HCA Certification &amp; CE</td><td>All staff</td></tr>
-  <tr><td>07</td><td>Nurse Delegation</td><td>All staff (if applicable)</td></tr>
-  <tr><td>08</td><td>Administrator Training</td><td>Providers only</td></tr>
-</table>
-
-<h3>Configuration Schema</h3>
-<pre><code>{
+  <h3>Configuration Schema</h3>
+  <pre>{
   "clients": [
     {
-      "chat_id": -1004391863263,           // Telegram channel ID
-      "name": "AFH_22 (Test)",              // Human label
-      "drive_root_id": "1KQ3fGvsCwR...",   // Drive folder ID
-      "service_account_key_file": ".service-account-keys/employee-docs-bot-sa.json",
-      "providers": ["Sandra Namwase"],       // Names flagged for audit
-      "cat_keywords": { /* per-category keyword arrays */ }
+      "chat_id": &lt;integer&gt;,
+      "name": &lt;string&gt;,
+      "drive_root_id": &lt;string&gt;,
+      "service_account_key_file": &lt;string&gt;,
+      "providers": ["Sandra Namwase"],
+      "cat_keywords": { "01 - Identity &amp; Employment": ["id", "driver", "license", ...], ... }
     }
   ]
-}</code></pre>
+}</pre>
 
-<h3>File Naming Convention</h3>
-<p><code>{Employee Full Name} - {WAC Category or Description}.{ext}</code></p>
-<p>Example: <code>Fatou Manneh - 04 - CPR &amp; First Aid.pdf</code></p>
-<p>Companion file: <code>Fatou Manneh - 04 - CPR &amp; First Aid-robot.txt</code> (contains extracted text + filing metadata)</p>
+  <h3>File Naming</h3>
+  <p><code>{Employee Full Name} - {WAC Category or Description}.{ext}</code></p>
+</div>
 
-<h2>Testing Decisions</h2>
+<div class="section">
+  <h2><span class="accent"></span>Testing Decisions</h2>
+  <p><strong>Seams (highest to lowest):</strong></p>
+  <ol>
+    <li><strong>End-to-end:</strong> Send a real document via test Telegram channel, verify classification, confirmation, and Drive filing.</li>
+    <li><strong><code>doc-extract.py</code> standalone:</strong> Test against PDF text, scanned PDF, JPEG, HEIC, DOCX, PNG, TIFF.</li>
+    <li><strong>Classification logic:</strong> Unit tests for <code>classify_by_rules</code> and <code>classify_by_llm</code> with known rosters and text.</li>
+    <li><strong>Drive API integration:</strong> Folder listing, creation, and upload against the AFH_22 test folder.</li>
+    <li><strong>Confirmation flow state machine:</strong> <code>pending</code> dict transitions — all branches including corrections, new employees, and expiry.</li>
+  </ol>
+  <p><strong>What makes a good test:</strong> Tests external behavior, not internals. Tests tier selection (known-good text → rules, ambiguous → LLM). Uses real file types (HEIC, scanned PDF). Drive tests use real API against test folder.</p>
+</div>
 
-<h3>Testing Seams</h3>
-<p>The highest-value testing seams, in priority order:</p>
-<ol>
-  <li><strong>End-to-end document flow</strong> — Send a real document via the test Telegram channel, verify classification, confirmation, and Drive filing. This is the primary seam and catches the most real-world issues.</li>
-  <li><strong><code>doc-extract.py</code> standalone</strong> — Test against known file types (PDF text, scanned PDF, JPEG, HEIC, DOCX, PNG, TIFF) with known text content to verify extraction accuracy. Existing prior art: the script was forked from <code>ai-os/scripts/doc-extract.py</code>.</li>
-  <li><strong>Classification logic (<code>classify_by_rules</code> and <code>classify_by_llm</code>)</strong> — Unit tests with known employee rosters and document text to verify correct tier selection and fallback. This is where the ambiguity detection lives and is worth testing independently.</li>
-  <li><strong>Drive API integration</strong> — Test folder listing, creation, and file upload against a test Drive folder. This can be tested via the SA against the AFH_22 test folder.</li>
-  <li><strong>Confirmation flow state machine</strong> — The <code>pending</code> dict transitions (new doc → awaiting_employee → awaiting_category → confirm → file) should be tested for all branches including corrections, new employees, and cancel/expiry.</li>
-</ol>
+<div class="section">
+  <h2><span class="accent"></span>Out of Scope</h2>
+  <ul>
+    <li>Persistent pending state — in-memory dict accepted for v1; restart = re-send document</li>
+    <li>Batch document processing — each document processed independently</li>
+    <li>Audit report generation — bot files documents; audits remain a separate process</li>
+    <li>Dashboard or web UI — all interaction via Telegram inline buttons and text</li>
+    <li>User authentication — bot trusts all messages in the configured channel</li>
+    <li>Provider/PROVIDER folder routing — all filing goes to CAREGIVERS/</li>
+  </ul>
+</div>
 
-<h3>What Makes a Good Test</h3>
-<ul>
-  <li>Tests external behavior, not implementation details. For <code>doc-extract.py</code>, test that text is extracted — not which internal method fired.</li>
-  <li>Test the classification tier selection: given known-good text, rules should match; given ambiguous text, LLM should be invoked.</li>
-  <li>Test real file types (HEIC, scanned PDF) not just convenient ones.</li>
-  <li>Drive integration tests use the real API against the test folder — no mocking the Drive service unless unavoidable.</li>
-</ul>
+<div class="section">
+  <h2><span class="accent"></span>Further Notes</h2>
+  <ul>
+    <li>The <code>ANTHROPIC_VISION_API_KEY</code> is set and <code>pillow-heif</code> is installed in both venvs.</li>
+    <li>Two Telegram bots exist: <code>afh_22_employee_paperwork_bot</code> (test) and <code>edmonds_villa_paperwork_bot</code> (production). Each needs its own systemd instance.</li>
+    <li>WAC 388-76-10198 (personnel records) is one of the most-cited DSHS violations — this bot directly addresses that compliance risk.</li>
+    <li>AFH_22 test folder has <code>CAREGIVERS/Test Employee, CNA/</code> with 7 category subfolders for testing.</li>
+  </ul>
+</div>
 
-<h2>Out of Scope</h2>
-<ul>
-  <li><strong>Persistent pending state</strong> — If the bot restarts mid-confirmation, the user re-sends the document. In-memory dict accepted for v1.</li>
-  <li><strong>Batch document processing</strong> — Each document is processed independently. No "process all unread messages" command.</li>
-  <li><strong>Audit report generation</strong> — The bot files documents; audit checks remain a separate process (the existing <code>/employee-records-audit</code> skill or manual review).</li>
-  <li><strong>Dashboard or web UI</strong> — All interaction is via Telegram inline buttons and text.</li>
-  <li><strong>User authentication</strong> — The bot trusts all messages in the configured channel. No per-user access control.</li>
-  <li><strong>Provider folder under PROVIDER/</strong> — Filing goes to CAREGIVERS/ for everyone. Provider distinction is audit-level only.</li>
-</ul>
+</div>
 
-<h2>Further Notes</h2>
-<ul>
-  <li>The <code>ANTHROPIC_VISION_API_KEY</code> is set and the <code>pillow-heif</code> library is installed in both venvs. No further setup needed for HEIC/OCR support.</li>
-  <li>Two Telegram bots exist: <code>afh_22_employee_paperwork_bot</code> (test) and <code>edmonds_villa_paperwork_bot</code> (production). Each needs its own systemd instance and <code>.env</code> file.</li>
-  <li>WAC 388-76-10198 (personnel records) is one of the most-cited violations by DSHS — this bot directly addresses that compliance risk by ensuring every document is filed to the correct category folder.</li>
-  <li>The AFH_22 test structure already has a <code>CAREGIVERS/Test Employee, CNA/</code> folder with 7 category subfolders for testing.</li>
-</ul>
+<div class="footer">
+  <p>Employee Docs Bot — <a href="https://omegadigital.ai">Omega Digital Services</a></p>
+</div>
 
 </body>
 </html>
