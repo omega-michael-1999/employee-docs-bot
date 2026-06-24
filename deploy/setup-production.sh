@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Creating production service file..."
+# Each AFH client gets their own named instance: employee-docs-bot-{client-name}
+# This script sets up the Edmonds Villa instance.
+# For future clients: copy this script, change the name and .env file.
 
-sudo tee /etc/systemd/system/employee-docs-bot-prod.service > /dev/null << 'SERVICE'
+CLIENT="edmonds-villa"
+SERVICE="employee-docs-bot-${CLIENT}"
+ENV_FILE="/opt/employee-docs-bot/.env.${CLIENT}"
+
+echo "==> Creating service file for ${SERVICE}..."
+
+sudo tee "/etc/systemd/system/${SERVICE}.service" > /dev/null << SERVICE
 [Unit]
-Description=Employee Docs Telegram Bot — Edmonds Villa (Production)
+Description=Employee Docs Telegram Bot — Edmonds Villa
+Documentation=https://github.com/omega-michael-1999/employee-docs-bot
 After=network.target
 
 [Service]
@@ -15,7 +24,7 @@ WorkingDirectory=/opt/employee-docs-bot
 ExecStart=/opt/employee-docs-bot/.venv/bin/python3 bot.py
 Restart=always
 RestartSec=10
-EnvironmentFile=/opt/employee-docs-bot/.env.prod
+EnvironmentFile=${ENV_FILE}
 StandardOutput=journal
 StandardError=journal
 
@@ -23,24 +32,28 @@ StandardError=journal
 WantedBy=multi-user.target
 SERVICE
 
-echo "==> Setting up passwordless sudo for production service..."
+echo "==> Setting up passwordless sudo for ${SERVICE}..."
 
-sudo tee /etc/sudoers.d/employee-docs-bot-prod > /dev/null << 'SUDOERS'
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl start employee-docs-bot-prod
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl stop employee-docs-bot-prod
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl restart employee-docs-bot-prod
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl status employee-docs-bot-prod
+sudo tee "/etc/sudoers.d/${SERVICE}" > /dev/null << SUDOERS
+michael ALL=(root) NOPASSWD: /usr/bin/systemctl start ${SERVICE}
+michael ALL=(root) NOPASSWD: /usr/bin/systemctl stop ${SERVICE}
+michael ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SERVICE}
+michael ALL=(root) NOPASSWD: /usr/bin/systemctl status ${SERVICE}
 SUDOERS
 
 echo "==> Reloading systemd and enabling service..."
 
 sudo systemctl daemon-reload
-sudo systemctl enable employee-docs-bot-prod
+sudo systemctl enable "${SERVICE}"
 
 echo ""
-echo "Done. You can now start the production bot with:"
-echo "  sudo systemctl start employee-docs-bot-prod"
+echo "Done. Manage this instance with:"
+echo "  sudo systemctl start ${SERVICE}"
+echo "  sudo systemctl status ${SERVICE}"
+echo "  sudo systemctl stop ${SERVICE}"
 echo ""
-echo "Both instances running:"
-echo "  sudo systemctl status employee-docs-bot     # test (AFH_22)"
-echo "  sudo systemctl status employee-docs-bot-prod # production (Edmonds Villa)"
+echo "All instances on this server:"
+echo "  sudo systemctl status employee-docs-bot                # test (AFH_22)"
+echo "  sudo systemctl status ${SERVICE}                       # ${CLIENT}"
+echo ""
+echo "Logs: journalctl -u ${SERVICE} -f"
