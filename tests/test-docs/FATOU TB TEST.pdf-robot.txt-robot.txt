@@ -1,0 +1,44 @@
+# Lab Order - QuantiFERON®-TB Gold (86480)
+
+**Patient:** Fatou Manneh
+
+**Status:** Final, Reviewed
+
+**Diagnosis:** Screening examination for pulmonary tuberculosis (Z11.1)
+
+**Ordered by:** Laura Bernabe DeLaCruz MA on behalf of Rachel Hellesto, ARNP on 4/9/2018 (Routine)
+
+**Collected:** 4/9/2018 8:55 AM
+
+**Requisition:** 1117209
+
+**Reported:** 4/11/2018 9:00 AM (QUEST)
+
+**Reviewed by:** Rachel Hellesto ARNP on 4/11/2018 3:49 PM
+
+---
+
+## Test Results
+
+| Test Name | Result | Units | Normal Range | Status |
+|-----------|--------|-------|--------------|--------|
+| QUANTIFERON(R)-TB GOLD | NEGATIVE | | NEGATIVE | Final, Reviewed |
+| NIL | 0.36 | IU/mL | | Final, Reviewed |
+| ANTIGEN-NIL | >10.00 | IU/mL | | Final, Reviewed |
+| TB-NIL | 0.01 | IU/mL | | Final, Reviewed |
+
+---
+
+## Additional Information
+
+**Report Comment:** 0% PT RESP
+
+**Test Performed at:** QUEST DIAGNOSTICS-SEATTLE, 1737 AIRPORT WAY, S. SUITE 200, SEATTLE, WA 98134-1636
+
+**Physician:** ROGER W GRAHAM, MD
+
+**Patient #:** 6249060
+
+**DOB:** 07/15/1976 (41 years)
+
+**Date of Report:** Monday, July 9, 2018

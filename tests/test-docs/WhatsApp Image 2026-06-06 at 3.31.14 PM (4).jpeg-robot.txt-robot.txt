@@ -1,0 +1,27 @@
+# Certificate Text Extraction
+
+**Main Title:**
+THIS CERTIFICATE IS PRESENTED TO
+
+**Recipient Information:**
+- Name: (Signature present)
+- Training Program Name: Metal Health Specialty Training
+- Meets requirements for: Mental Health Specialist
+- Meets requirements for Managed Medical Healthcare course
+
+**Course Details:**
+- Signature of OSHS approved Instructor
+- 8 hours of OSHS approved
+- for successfully completing
+
+**Program Information:**
+- Training Program Number: WAZ5407
+- Training Program Name: Caregiver Training and Haiduma Center
+- Part Name: MAUREEN MIRRIGI
+- Date: 3/27/2025
+
+**Seal/Emblem:**
+- Sea of Trial (official seal visible)
+
+**Document Date:**
+- Issued 3/30/07
