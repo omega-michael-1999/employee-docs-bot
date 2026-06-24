@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Review — Employee Docs Bot | Omega Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: #1a1f35;
+    --bg-card-hover: #1f2544;
+    --border: #2a3052;
+    --text-primary: #e8edf5;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #22d3ee;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --gradient-main: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    --gradient-accent: linear-gradient(90deg, #22d3ee, #3b82f6, #8b5cf6);
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --tag-high-bg: rgba(239,68,68,0.12);
+    --tag-high-text: #fca5a5;
+    --tag-med-bg: rgba(245,158,11,0.12);
+    --tag-med-text: #fcd34d;
+    --tag-low-bg: rgba(59,130,246,0.12);
+    --tag-low-text: #93c5fd;
+    --tag-structural-bg: rgba(139,92,246,0.15);
+    --tag-structural-text: #c4b5fd;
+    --tag-eng-bg: rgba(34,211,238,0.12);
+    --tag-eng-text: #67e8f9;
+    --tag-ops-bg: rgba(16,185,129,0.12);
+    --tag-ops-text: #6ee7b7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.7; }
+  .header { background: var(--gradient-main); color: #fff; padding: 64px 24px 48px; text-align: center; position: relative; overflow: hidden; }
+  .header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 50%, rgba(34,211,238,0.08) 0%, transparent 70%); pointer-events: none; }
+  .header::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='rgba(255,255,255,0.02)' stroke-width='1'/%3E%3C/svg%3E") repeat; pointer-events: none; opacity: 0.4; }
+  .header h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; position: relative; }
+  .header p { font-size: 1.05rem; color: var(--text-secondary); position: relative; }
+  .header .badge { display: inline-block; background: linear-gradient(90deg, rgba(34,211,238,0.15), rgba(139,92,246,0.15)); color: var(--accent-cyan); font-size: 0.75rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; margin-bottom: 16px; letter-spacing: 0.03em; text-transform: uppercase; border: 1px solid rgba(34,211,238,0.2); }
+  .header .meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 12px; position: relative; }
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0 24px; position: sticky; top: 0; z-index: 10; }
+  .nav-bar-inner { max-width: 960px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; }
+  .nav-bar a { display: block; padding: 14px 0; font-size: 0.85rem; font-weight: 500; color: var(--text-muted); text-decoration: none; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+  .nav-bar a:hover, .nav-bar a.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+  .section { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); padding: 32px; margin-bottom: 28px; }
+  .section h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .section h2 .accent-bar { display: inline-block; width: 4px; height: 24px; background: var(--gradient-accent); border-radius: 2px; flex-shrink: 0; }
+  .section h3 { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 24px 0 10px; }
+  .section h4 { font-size: 0.92rem; font-weight: 600; color: var(--accent-cyan); margin: 16px 0 8px; }
+  p { margin-bottom: 14px; color: var(--text-secondary); font-size: 0.92rem; }
+  p strong { color: var(--text-primary); }
+  ol, ul { padding-left: 20px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; font-size: 0.9rem; color: var(--text-secondary); }
+  code { background: rgba(34,211,238,0.1); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; font-size: 0.82em; font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+  pre { background: #060a16; color: #c4b5fd; padding: 20px; border-radius: 10px; font-size: 0.82rem; font-family: 'JetBrains Mono', 'SF Mono', monospace; overflow-x: auto; line-height: 1.5; margin: 16px 0; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; border-bottom: 2px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid rgba(42,48,82,0.5); font-size: 0.9rem; vertical-align: top; color: var(--text-secondary); }
+  td:first-child { font-weight: 500; color: var(--text-primary); }
+  tr:last-child td { border-bottom: none; }
+  .highlight-box { border-radius: 10px; padding: 20px; margin: 16px 0; border-left: 4px solid; }
+  .highlight-box.success { background: rgba(16,185,129,0.06); border-color: var(--success); }
+  .highlight-box.success h4 { color: var(--success); }
+  .highlight-box.warning { background: rgba(245,158,11,0.06); border-color: var(--warning); }
+  .highlight-box.warning h4 { color: var(--warning); }
+  .highlight-box.danger { background: rgba(239,68,68,0.06); border-color: var(--danger); }
+  .highlight-box.danger h4 { color: var(--danger); }
+  .highlight-box.info { background: rgba(59,130,246,0.06); border-color: var(--info); }
+  .highlight-box.info h4 { color: var(--info); }
+  .badge { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.03em; text-transform: uppercase; margin-right: 4px; }
+  .badge.high { background: var(--tag-high-bg); color: var(--tag-high-text); }
+  .badge.medium { background: var(--tag-med-bg); color: var(--tag-med-text); }
+  .badge.low { background: var(--tag-low-bg); color: var(--tag-low-text); }
+  .badge.structural { background: var(--tag-structural-bg); color: var(--tag-structural-text); }
+  .badge.engineering { background: var(--tag-eng-bg); color: var(--tag-eng-text); }
+  .badge.operational { background: var(--tag-ops-bg); color: var(--tag-ops-text); }
+  .badge.structural.outline { background: transparent; border: 1px solid var(--tag-structural-text); color: var(--tag-structural-text); }
+  .badge.engineering.outline { background: transparent; border: 1px solid var(--tag-eng-text); color: var(--tag-eng-text); }
+  .badge.operational.outline { background: transparent; border: 1px solid var(--tag-ops-text); color: var(--tag-ops-text); }
+  .finding-id { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--accent-purple); font-weight: 500; }
+  .finding { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .finding:last-child { border-bottom: none; margin-bottom: 0; }
+  .finding h3 { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .finding h3 .id { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-purple); background: rgba(139,92,246,0.1); padding: 2px 10px; border-radius: 6px; white-space: nowrap; }
+  .finding .meta-line { margin: 6px 0 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .finding .solution-box { background: rgba(34,211,238,0.04); border: 1px solid rgba(34,211,238,0.15); border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .finding .solution-box h4 { color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 8px; }
+  .finding .designer-response { margin-top: 14px; padding: 12px 16px; background: rgba(139,92,246,0.06); border: 1px dashed rgba(139,92,246,0.3); border-radius: 8px; font-style: italic; color: var(--text-muted); font-size: 0.85rem; }
+  .verdict-box { text-align: center; padding: 32px; margin-bottom: 28px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); }
+  .verdict-score { font-size: 4rem; font-weight: 800; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .verdict-label { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin: 8px 0; }
+  .verdict-desc { color: var(--text-secondary); font-size: 0.9rem; max-width: 600px; margin: 0 auto; }
+  .divider { background: var(--gradient-accent); height: 1px; width: 100%; margin: 32px 0; opacity: 0.3; }
+  .issues-table { width: 100%; }
+  .issues-table td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; white-space: nowrap; }
+  .issues-table a { color: var(--accent-cyan); text-decoration: none; }
+  .issues-table a:hover { text-decoration: underline; }
+  .issues-table .sev-high { color: var(--tag-high-text); }
+  .issues-table .sev-med { color: var(--tag-med-text); }
+  .issues-table .sev-low { color: var(--tag-low-text); }
+  .silent-killer { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(245,158,11,0.08)); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 24px; margin: 20px 0; }
+  .silent-killer h3 { color: var(--danger); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .silent-killer h3::before { content: '⚠️'; font-size: 1.2rem; }
+  .tag { display: inline-block; background: rgba(34,211,238,0.1); color: var(--accent-cyan); font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 12px; }
+  .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .tag-amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .footer { text-align: center; padding: 32px 24px; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
+  .footer a { color: var(--accent-cyan); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .header h1 { font-size: 1.6rem; } .section { padding: 20px; } .verdict-score { font-size: 3rem; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">Design Review</div>
+  <h1>Employee Docs Bot — Design Review</h1>
+  <p>Structural, engineering, and operational assessment of the AFH document filing system</p>
+  <div class="meta">2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; Version 1.0.0 &nbsp;·&nbsp; Review of v1 design &nbsp;·&nbsp; <span class="tag tag-amber">Pre-implementation review</span></div>
+</div>
+
+<div class="nav-bar">
+  <div class="nav-bar-inner">
+    <a href="#verdict">Verdict</a>
+    <a href="#what-works">What Works</a>
+    <a href="#open-issues">Open Issues</a>
+    <a href="#findings">Findings</a>
+    <a href="#summary">Summary</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ===== VERDICT ===== -->
+<section id="verdict" class="verdict-box">
+  <div class="verdict-score">B</div>
+  <div class="verdict-label">Good Foundation — Moderate Issues to Resolve Before Production</div>
+  <div class="verdict-desc">
+    The document processing pipeline is well-conceived, the multi-tenant config is clean, and the hybrid classification tier logic makes economic sense. Two structural problems — state loss on restart and single service account isolation — must be resolved before this bot serves real AFH compliance data. The engineering-level issues (fragile state machine, cache absence, race conditions) will compound rapidly under real usage. Fix these and this is a solid B+/A- design.
+  </div>
+  <p style="margin-top:16px;font-size:0.82rem;color:var(--text-muted);">
+    <strong>Key takeaway:</strong> Don't put this into production with in-memory state and a shared service account. Those two choices turn every crash into a data-loss event and every tenant into a cross-tenant liability.
+  </p>
+</section>
+
+<!-- ===== WHAT WORKS ===== -->
+<section id="what-works" class="section">
+  <h2><span class="accent-bar"></span>What Works</h2>
+
+  <div class="highlight-box success">
+    <h4>✅ Clean Multi-Tenant Configuration</h4>
+    <p>The <code>config.json</code> client array pattern is exactly right. Adding a new AFH client means adding one JSON block — no code changes, no redeployment. The separation of per-instance <code>.env</code> files from shared config is the correct boundary. This is the strongest architectural decision in the design.</p>
+  </div>
+
+  <div class="highlight-box success">
+    <h4>✅ Three-Tier Classification Is Cost-Effective</h4>
+    <p>Rules → LLM → manual is the right economic structure. Rules cost nothing and handle the common case. LLM costs pennies only for ambiguous documents. Manual correction is free for the rare failures. The PRD correctly identifies that most documents will be routine (CPR renewal for a known employee) and will hit Tier 1 with high confidence. The Tier 2 validator that checks LLM output against known rosters is a critical safety net.</p>
+  </div>
+
+  <div class="highlight-box success">
+    <h4>✅ Document Extraction Subprocess Isolation</h4>
+    <p>Running <code>doc-extract.py</code> as a subprocess with a 300-second timeout is the right call. Document extraction is I/O-heavy, memory-variable (a 50-page scanned PDF), and failure-prone (corrupted files). Isolating it from the main bot process prevents a hung extraction from blocking Telegram message handling. The fallback chain (PyPDF2 → PyMuPDF render → Haiku vision) is thorough.</p>
+  </div>
+
+  <div class="highlight-box success">
+    <h4>✅ Companion <code>-robot.txt</code> for Searchability</h4>
+    <p>Writing extracted text alongside every document is a simple insight with outsized value. Drive's native search doesn't index image text. The companion file makes every document discoverable by content. This alone justifies the OCR cost.</p>
+  </div>
+
+  <div class="highlight-box success">
+    <h4>✅ HEIC Support at the Right Layer</h4>
+    <p>iPhone users (overwhelmingly likely for AFH administrators) send HEIC by default. Converting in <code>doc-extract.py</code> via <code>pillow-heif</code> before the vision API call keeps the pipeline clean. The graceful degradation when the library is missing is a nice touch.</p>
+  </div>
+
+  <div class="highlight-box success">
+    <h4>✅ Production-Grade Deployment Model</h4>
+    <p>systemd with <code>Restart=always</code>, passwordless sudo for specific commands, per-token systemd instances, journald logging — this is how you deploy a single-server bot. The <code>setup-clients.sh</code> script for multi-client systemd management shows foresight.</p>
+  </div>
+</section>
+
+<!-- ===== OPEN ISSUES ===== -->
+<section id="open-issues" class="section">
+  <h2><span class="accent-bar"></span>Open Issues</h2>
+  <p style="margin-bottom:12px;">Findings that remain unresolved — requiring designer attention before production deployment:</p>
+  <table class="issues-table">
+    <tr><th>ID</th><th>Severity</th><th>Title</th></tr>
+    <tr><td><a href="#sp-1">SP-1</a></td><td class="sev-high">HIGH</td><td>Roster Cache Absence Creates Latency-Scaling Problem</td></tr>
+    <tr><td><a href="#sp-2">SP-2</a></td><td class="sev-high">HIGH</td><td>State Loss on Restart Is a v0 Tradeoff Masquerading as v1</td></tr>
+    <tr><td><a href="#sp-3">SP-3</a></td><td class="sev-high">HIGH</td><td>Single Service Account Breaks Multi-Tenant Security Isolation</td></tr>
+    <tr><td><a href="#sp-4">SP-4</a></td><td class="sev-high">HIGH</td><td>Handler State Machine Is Fragile and Race-Prone</td></tr>
+    <tr><td><a href="#ei-1">EI-1</a></td><td class="sev-med">MEDIUM</td><td>DeepSeek Classification Adds API Surface Without Clear Advantage</td></tr>
+    <tr><td><a href="#ei-2">EI-2</a></td><td class="sev-med">MEDIUM</td><td>Hardcoded Deployment Path Blocks Local Development</td></tr>
+    <tr><td><a href="#ei-3">EI-3</a></td><td class="sev-med">MEDIUM</td><td>Broad Message Filters Capture Unintended Messages</td></tr>
+    <tr><td><a href="#ei-4">EI-4</a></td><td class="sev-med">MEDIUM</td><td>No Document-Level Observability for Flow Tracing</td></tr>
+    <tr><td><a href="#op-1">OP-1</a></td><td class="sev-low">LOW</td><td>Temp File Cleanup Is Non-Atomic and Leak-Prone</td></tr>
+    <tr><td><a href="#qf-1">QF-1</a></td><td class="sev-med">MEDIUM</td><td>User Gets No Feedback When Tier 2 (LLM) Falls Back to Tier 3</td></tr>
+    <tr><td><a href="#qf-2">QF-2</a></td><td class="sev-low">LOW</td><td>What File Types Actually Reach the Pipeline?</td></tr>
+  </table>
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== FINDINGS ===== -->
+<section id="findings" class="section">
+  <h2><span class="accent-bar"></span>Findings</h2>
+
+  <!-- SP-1 -->
+  <div class="finding" id="sp-1">
+    <h3><span class="id">SP-1</span> Roster Cache Absence Creates Latency-Scaling Problem</h3>
+    <div class="meta-line">
+      <span class="badge high">HIGH SEVERITY</span>
+      <span class="badge structural">Structural</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The employee roster is scanned from Google Drive for <em>every single document</em>. Each scan requires two Drive API calls: (1) find the CAREGIVERS folder, then (2) list its subfolders. For a low-volume AFH (5-10 documents/day) this is an acceptable latency tax of 1-2 seconds per document. But the design explicitly makes this a per-document cost with no caching, justified as "always fresh" (see <a href="architecture.html">architecture.html</a>, State Management table).</p>
+
+    <p>The roster changes only when the Omega administrator manually adds a new employee folder to Drive — a rare, human-initiated event that happens at most a few times per month. Between those events, the roster is <em>identical</em> for every document processed. The "always fresh" argument collapses under this reality: the source of truth is mutated by human action, not by a concurrent process. The cache invalidation problem here is trivial — you don't need eventual consistency for a folder list that changes monthly.</p>
+
+    <p>At multi-tenant scale (3-5 AFHs, 50+ documents/day), this multiplies into measurable Drive API overhead and a real latency cost for the user waiting on a Telegram confirmation prompt. The Drive API quota (default 1B requests/day) won't be hit, but the per-document latency is additive and unnecessary.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>In-memory cache with 30-minute TTL.</strong> Cache the employee roster dict on first fetch. Re-fetch on cache miss or after TTL expiry. Add a <code>/reload-roster</code> command for the Omega administrator to force-refresh after onboarding a new employee. This costs ~10 lines of code, eliminates the Drive API call from the hot path of every document, and the "staleness window" is bounded by a TTL the operator controls. A systemd service restart also clears the cache on demand.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- SP-2 -->
+  <div class="finding" id="sp-2">
+    <h3><span class="id">SP-2</span> State Loss on Restart Is a v0 Tradeoff Masquerading as v1</h3>
+    <div class="meta-line">
+      <span class="badge high">HIGH SEVERITY</span>
+      <span class="badge structural">Structural</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <div class="silent-killer">
+      <h3>This is the most dangerous hidden problem in the design.</h3>
+      <p style="margin-top:8px;">The PRD accepts in-memory state as a v1 decision: "restart = re-send document" (see <a href="prd.html#out-of-scope">PRD, Out of Scope</a>). But this bot runs under systemd with <code>Restart=always</code> and <code>RestartSec=10</code>. Any crash — and this bot will crash, because it calls three external APIs (Telegram, DeepSeek, Anthropic, Google Drive) plus a subprocess for document extraction — results in the <code>pending</code> dict being obliterated. Within 10 seconds the bot is back up with zero knowledge of the document being processed.</p>
+    </div>
+
+    <p><strong>Problem:</strong> The failure chain is: AFH administrator sends a photo of a CPR card → bot downloads, extracts text, classifies, and shows "Is this a CPR card for Fatou Manneh?" with [Yes][No] buttons → 5 seconds later, the bot crashes because DeepSeek's API returned a 502 or the temp file cleanup threw an exception → systemd restarts the process → the <code>pending</code> dict is empty → the user taps "Yes" → the bot responds "Sorry, this expired. Please send the document again." — the user has to re-photograph a physical paper document that's already in their pocket.</p>
+
+    <p>This isn't an edge case. This is the steady state for any long-running Telegram bot that integrates with four external APIs, each with its own failure modes. The PRD frames state loss as an acceptable "restart = re-send" tradeoff, but that framing assumes a clean restart (operator-initiated), not a crash restart (the default operational mode). For a compliance-critical document workflow where the user is physically handling paper records, forcing a re-send on every crash is a product failure.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>SQLite-based persistence.</strong> Replace the in-memory <code>pending</code> dict with a simple SQLite database (stdlib, zero dependencies). The schema is trivial: <code>chat_id, message_id, file_path, file_name, text, employee, category, state, created_at</code>. A single <code>pending.db</code> file survives crashes and restarts. The state machine transitions become SQL UPDATEs. On bot startup, any pending documents older than 24 hours are cleaned up with a log warning. This costs ~40 lines of code and eliminates the data-loss-on-crash vulnerability entirely. The SQLite file writes to <code>/opt/employee-docs-bot/data/</code>, which is persistent.</p>
+      <p style="margin-top:8px;"><strong>Alternative (lighter): JSON file persistence.</strong> Serialize <code>pending</code> to <code>pending.json</code> on every state transition. On startup, deserialize if the file exists. Simpler but loses SQL queryability — and you <em>will</em> want to query pending documents when debugging.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- SP-3 -->
+  <div class="finding" id="sp-3">
+    <h3><span class="id">SP-3</span> Single Service Account Breaks Multi-Tenant Security Isolation</h3>
+    <div class="meta-line">
+      <span class="badge high">HIGH SEVERITY</span>
+      <span class="badge structural">Structural</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The architecture uses one Google service account shared by all clients, with "Editor" access on all client Drive folders and folder-level permissions as the only isolation boundary (see <a href="architecture.html#security-model">architecture.html, Security Model</a>). This means any of the following events compromise every tenant's data:</p>
+    <ul>
+      <li>The service account key file is leaked (stolen from the server, committed to git by accident, exposed via a debug endpoint)</li>
+      <li>A bug in the bot's Drive routing logic accidentally lists or writes to the wrong client's Drive folder</li>
+      <li>A malicious actor who gains access to one client's Telegram channel can use the bot as a relay to access other clients' Drive data</li>
+      <li>The service account has Editor access across all folders — a misrouted delete operation cannot be undone</li>
+    </ul>
+    <p>The config schema's <code>service_account_key_file</code> field is per-client, which implies the designer considered per-client keys but didn't implement them. The architecture document and the file-naming convention (<code>.service-account-keys/</code> directory) suggest a single shared key. This ambiguity is itself a finding — the config schema and the implementation disagree on the security model.</p>
+    <p>For a system handling compliance documents — government-issued IDs, background checks with fingerprints, TB test results, employment eligibility forms — this is a compliance risk under any reasonable interpretation of HIPAA and Washington State privacy regulations. The DSHS violation risk that the bot is designed to <em>reduce</em> (WAC 388-76-10198) is replaced by a data breach risk that's <em>introduced</em> by the shared-key architecture.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Per-client service accounts.</strong> Create one Google service account per AFH client, grant it Editor access only to that client's Drive root folder, and store the key file per-client as the config schema already implies (<code>"service_account_key_file": ".service-account-keys/edmonds-villa-sa.json"</code>). The code already supports this — it reads the key file from the per-client config entry. The only change is operational: create separate keys and grant scoped permissions. This eliminates cross-tenant blast radius. Key files remain gitignored and filesystem-protected.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- SP-4 -->
+  <div class="finding" id="sp-4">
+    <h3><span class="id">SP-4</span> Handler State Machine Is Fragile and Race-Prone</h3>
+    <div class="meta-line">
+      <span class="badge high">HIGH SEVERITY</span>
+      <span class="badge structural">Structural</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The <code>handle_callback</code> and <code>handle_text</code> functions implement a state machine using ad-hoc dictionary lookups over the <code>pending</code> dict. The state encoding is inconsistent — sometimes keyed by <code>(chat_id, message_id)</code> (normal confirmations), sometimes by <code>(chat_id, "awaiting_employee")</code> (correction flows), and sometimes by <code>(chat_id, "awaiting_new_name")</code>. The handler tries <code>pending.pop(key)</code>, then checks a specific string key, then iterates through the entire dict looking for any matching chat_id. This is a state machine implemented as a sequence of fragile lookups.</p>
+
+    <p>The specific race condition: <code>handle_text</code> iterates <code>pending.keys()</code> and grabs "the first pending key matching the chat_id" (<a href="bot.py#L441">bot.py:441-444</a>):</p>
+    <pre>for k in list(pending.keys()):
+    if k[0] == chat_id:
+        info = pending.pop(k)
+        break</pre>
+
+    <p>If a user has two documents in flight and types text, the handler grabs whichever pending entry comes first in dict iteration order (Python 3.7+ insertion order, meaning the oldest document). The text correction applies to the wrong document. This is user-visible data corruption.</p>
+
+    <p>Python's GIL protects individual dict operations but not compound check-then-pop sequences. With <code>python-telegram-bot</code>'s async architecture handling callbacks and text messages concurrently, two handlers can operate on the same chat_id's state simultaneously — leading to documents being filed under wrong names, duplicate filings, or lost states.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Per-chat state machine with explicit state enum.</strong> Restructure to use a single state object per chat_id:</p>
+      <pre>class ChatState(Enum):
+    IDLE = auto()
+    AWAITING_CONFIRMATION = auto()
+    AWAITING_EMPLOYEE_CORRECTION = auto()
+    AWAITING_DOCUMENT_TYPE = auto()
+    FILING = auto()
+
+chat_states: dict[int, ChatSession] = {}  # chat_id -> ChatSession</pre>
+      <p>This eliminates the multi-key lookup pattern, ensures one state per chat (preventing cross-document confusion), and makes state transitions explicit and auditable. A per-chat <code>asyncio.Lock</code> prevents concurrent state mutations on the same chat_id. The lock is the cheap, correct fix for the race condition — it serializes state transitions for a given chat without blocking other chats.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- EI-1 -->
+  <div class="finding" id="ei-1">
+    <h3><span class="id">EI-1</span> DeepSeek Classification Adds API Surface Without Clear Advantage</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge engineering">Engineering</span>
+      <span class="badge medium">MEDIUM CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The Tier 2 classification uses DeepSeek Chat API, but you already have Anthropic API keys for vision OCR. Adding DeepSeek creates a second external API integration with its own failure modes (different auth, different rate limits, different API versioning, different outage patterns) for a task any capable model could handle. The classification prompt is simple — extract employee name, category, and description from document text — well within the capability of Claude Haiku (which you're already paying for per-document for vision OCR).</p>
+
+    <p>The DeepSeek JSON response parsing is also fragile. The regex <code>r'\{[^}]+\}'</code> (<a href="bot.py#L216">bot.py:216</a>) will fail on any JSON with nested objects or arrays. The model is instructed to return flat JSON, but this is enforced by prompt only, not by any structured output mechanism. If DeepSeek returns <code>{"employee": "Fatou Manneh", "category": "04 - CPR & First Aid", "description": "CPR card, renewed 2026"}</code>, it works. If it adds an array or wraps it in a markdown code block, it silently fails and degrades to Tier 3.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Use Claude Haiku for both OCR and classification.</strong> Since you're already paying for one Haiku call per scanned document, adding a second Haiku call (using the same API key, same client) for classification when the rules tier is ambiguous simplifies the architecture: one fewer API key to manage, one fewer provider to monitor, one fewer error-handling path. If Haiku costs are a concern (unlikely at the volume of ambiguous documents), cache the classification result — the same document text will always classify the same way.</p>
+      <p style="margin-top:8px;"><strong>If keeping DeepSeek:</strong> Replace the regex JSON parser with a proper <code>json.loads(content)</code> with cleanup for markdown code fences. Add a retry on JSON parse failure with a prompt correction. Add structured output via a function-calling API if DeepSeek supports it.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- EI-2 -->
+  <div class="finding" id="ei-2">
+    <h3><span class="id">EI-2</span> Hardcoded Deployment Path Blocks Local Development</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge engineering">Engineering</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> Every test file starts with <code>sys.path.insert(0, '/opt/employee-docs-bot')</code>, meaning tests can only run on the deployment server at that exact path or with a symlink hack. The repo lives at <code>subrepos/employee-docs-bot/</code> in this workspace. Running <code>pytest</code> locally fails immediately with an import error. This creates a development anti-pattern where tests are never run locally and code is only tested on the production server — or, more likely, never tested at all.</p>
+
+    <p>The classification tests (test_classification.py, test_ambiguity.py) are actually well-structured and valuable. They test the word-boundary matching logic, category keyword matching, and confidence scoring — all critical to the rules tier's accuracy. But they're effectively disabled by the path assumption.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Relative import with pytest path config.</strong> Either: (a) add a <code>pytest.ini</code> or <code>pyproject.toml</code> with <code>pythonpath = ["."]</code>, or (b) restructure <code>bot.py</code> into a proper package (<code>employee_docs_bot/__init__.py</code>) with importable modules. The pytest config approach is lighter and sufficient for a project this size:</p>
+      <pre># pytest.ini (in repo root)
+[pytest]
+pythonpath = .</pre>
+      <p>Change the test imports to relative: <code>from bot import classify_by_rules</code> works when <code>pythonpath = .</code> is set. Remove the <code>sys.path.insert</code> lines from all test files.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- EI-3 -->
+  <div class="finding" id="ei-3">
+    <h3><span class="id">EI-3</span> Broad Message Filters Capture Unintended Messages</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge engineering">Engineering</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> Two filter issues in <a href="bot.py#L667">bot.py:667-669</a>:</p>
+
+    <p><strong>1. Text handler swallows all non-command messages.</strong> The correction text handler uses <code>filters.TEXT &amp; ~filters.COMMAND</code> — which means <em>any</em> text message sent to a configured chat gets consumed by the correction flow, even if the user is just chatting. In a multi-tenant AFH channel where the administrator might send "I'll be in at 10 tomorrow" or "Did you get the Smith file?", that message vanishes into the state machine with no feedback. The handler silently pops from <code>pending</code> and, finding nothing, returns silently (<code>if not info: return</code> at <a href="bot.py#L446">bot.py:446</a>). The user never sees their message again — it's been consumed by the bot with no response.</p>
+
+    <p><strong>2. No file size limits or type restrictions.</strong> The document handler accepts <code>filters.PHOTO | filters.Document.MimeType("application/pdf") | filters.Document.Category("image/")</code>. A 100MB video mislabeled as <code>image/png</code>, a corrupted PDF that crashes <code>doc-extract.py</code>, or a HEIC photo at 48MP resolution all pass through to the processing pipeline with no size guard. They consume temp space, CPU for extraction, and API credits for the vision call, then fail with a generic error.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>1. Scoped text handler:</strong> Only enter the correction handler when there's a pending state for that chat_id. Check <code>chat_id in chat_states or chat_id in pending</code> at the top of <code>handle_text</code>. If no pending state exists, ignore the message silently (or reply "I don't understand text messages outside of document correction flow").</p>
+      <p><strong>2. File size and type guards:</strong> Reject files >20MB before download. Check the file extension against a whitelist of supported types before passing to <code>doc-extract.py</code>. Give clear error messages: "This file type is not supported. Please send PDF, JPEG, PNG, or HEIC photos of documents." instead of "Could not extract text from this document."</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- EI-4 -->
+  <div class="finding" id="ei-4">
+    <h3><span class="id">EI-4</span> No Document-Level Observability for Flow Tracing</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge engineering">Engineering</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> Logging uses plain Python <code>logging.INFO</code> with unstructured string messages. There's no document ID or correlation ID flowing through the pipeline. When a classification fails, the log shows <code>Classification failed — manual correction needed</code> (<a href="bot.py#L259">bot.py:259</a>) but doesn't include the document name, chat context, or extracted text excerpt. When the DeepSeek API times out, the log shows <code>DeepSeek classification failed: {e}</code> but not what document was being classified. Debugging a production issue requires correlating journald timestamps with Telegram messages manually.</p>
+
+    <p>The architecture doc's Observability section (<a href="architecture.html#observability">architecture.html, §Observability</a>) lists logging, failed classification WARNINGs, and Drive error reporting — all of which are accurate, but none of which include a document ID or structured context.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Add a document UUID at pipeline entry.</strong> Generate a UUID (<code>doc_xxx</code>) when <code>handle_document</code> receives a file. Pass it through every log line as <code>doc_id</code>. Every state in the pipeline — received, extracted, classified (with tier and result), confirmed, filed — is logged with the doc_id. This makes <code>journalctl -u employee-docs-bot | grep doc_abc123</code> the debugging superpower. The UUID also serves as the temp file name prefix, making it easy to correlate filesystem artifacts with log entries. This costs ~5 lines of code for the UUID generation and a <code>logging.LoggerAdapter</code> wrapper.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- OP-1 -->
+  <div class="finding" id="op-1">
+    <h3><span class="id">OP-1</span> Temp File Cleanup Is Non-Atomic and Leak-Prone</h3>
+    <div class="meta-line">
+      <span class="badge low">LOW SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge high">HIGH CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> Temp files are created with <code>tempfile.NamedTemporaryFile(delete=False)</code> (<a href="bot.py#L298">bot.py:298</a>) to survive across async boundaries. Cleanup happens in try/finally blocks across <code>handle_document</code> and <code>file_document</code>, but the error handling is inconsistent:</p>
+    <ul>
+      <li>In <code>handle_document</code>, temp files are cleaned up in <code>file_document</code>'s finally block</li>
+      <li>But <code>handle_document</code> also has its own cleanup paths on early error returns (lines 308, 316, 325)</li>
+      <li>If the user never responds to a confirmation prompt, the temp file lives in <code>/tmp</code> forever</li>
+      <li>If the bot crashes between download and filing, the temp file is orphaned</li>
+      <li>The <code>file_document</code> function also creates a second temp file (<code>-robot.txt</code>) which it cleans up, but if the robot.txt upload succeeds and the main file upload fails, the robot.txt cleanup still runs, leaving the main file</li>
+    </ul>
+    <p>In practice, <code>/tmp</code> is cleaned on reboot, and document volumes are low enough that leak accumulation is slow. But at production scale (hundreds of documents), orphaned temp files become a real disk pressure issue, especially for multi-page PDFs and high-resolution photos.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p><strong>Register temp files in a cleanup registry.</strong> Track every created temp file path in a <code>set()</code>. On bot startup (or in a periodic async task), sweep and remove any files older than 24 hours. Use <code>@contextmanager</code> or a dedicated <code>TempFileManager</code> class that ensures cleanup in all exit paths. This is low-priority but eliminates an entire class of operational debt.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- QF-1 -->
+  <div class="finding" id="qf-1">
+    <h3><span class="id">QF-1</span> User Gets No Feedback When Tier 2 (LLM) Falls Back to Tier 3</h3>
+    <div class="meta-line">
+      <span class="badge medium">MEDIUM SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge medium">MEDIUM CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> When DeepSeek fails (timeout, parse error, API down), the classification silently degrades to Tier 3 (manual correction). The user sees the same flow as if the bot never attempted automated classification — they get dumped into "What's the employee's full name?" with no context about why. The difference in user experience between "tap Yes/No" and "type full name, then type document type" is enormous. The user has no way to distinguish "the bot couldn't figure it out from the document text" (expected for low-quality photos) from "the LLM API is down" (transient, retry might work).</p>
+
+    <p>There's also a timing issue: the DeepSeek API call has a 30-second timeout. The user sees "Processing document..." and then waits up to 30 seconds with no intermediate feedback before getting dumped into the manual correction flow. Without explanation, this feels like the bot hung.</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p>When Tier 2 fails and Tier 3 initiates, send an intermediate message: "I couldn't auto-classify this document (the classification service is temporarily unavailable). Let me ask you instead:" before starting the manual prompt. If the timeout is hit, tell the user "The classification service timed out — sorry about that. Let me ask you directly:" rather than leaving them waiting. This costs a couple of log checks and a reply_text call but dramatically changes the user's perception of reliability. A retry button for the LLM classification would be even better — let the user decide whether to wait for an API retry or skip to manual.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+  <!-- QF-2 -->
+  <div class="finding" id="qf-2">
+    <h3><span class="id">QF-2</span> What File Types Actually Reach the Pipeline?</h3>
+    <div class="meta-line">
+      <span class="badge low">LOW SEVERITY</span>
+      <span class="badge operational">Operational</span>
+      <span class="badge low">LOW CONFIDENCE</span>
+    </div>
+
+    <p><strong>Problem:</strong> The Telegram handler filter is <code>filters.PHOTO | filters.Document.MimeType("application/pdf") | filters.Document.Category("image/")</code>. But <code>doc-extract.py</code> only handles specific extensions: jpg, jpeg, png, tiff, tif, bmp, gif, webp, heic, heif, pdf, docx, txt, html, htm, xml, json, csv. The intersection of "MIME types Telegram says are images" and "file types doc-extract.py can handle" is not explicitly defined. If Telegram starts reporting a new image MIME type (e.g., <code>image/avif</code> for AVIF format), the document passes the filter but <code>doc-extract.py</code>'s extension-based routing won't parse it — it falls through to the <code>else</code> block at line 62 which tries all methods, eventually returning <code>None</code>, and the user gets "Could not extract text from this document."</p>
+
+    <div class="solution-box">
+      <h4>Proposed Solution</h4>
+      <p>Define a single explicit whitelist of supported extensions (e.g., <code>SUPPORTED_EXTS = {'.pdf', '.jpg', '.jpeg', '.png', '.heic', '.heif', '.docx', '.txt'}</code>) and validate at the handler level. Reject unsupported types with a clear message: "I can only process PDF, JPEG, PNG, HEIC photos, DOCX, and TXT files." The error message should tell the user what they <em>can</em> send, not just what they sent wrong. This aligns with EI-3's file guard suggestion.</p>
+    </div>
+
+    <div class="designer-response">Designer's response: <em>awaiting review</em></div>
+  </div>
+
+</section>
+
+<div class="divider"></div>
+
+<!-- ===== SUMMARY ASSESSMENT ===== -->
+<section id="summary" class="section">
+  <h2><span class="accent-bar"></span>Summary Assessment</h2>
+
+  <p><strong>Verdict: Proceed with changes.</strong> The design is fundamentally sound but has issues that must be resolved before production deployment. The document processing pipeline, multi-tenant config, and OCR/classification tier strategy are correct. The three things I'd fix before this ever touches production Drive data:</p>
+
+  <ol>
+    <li><strong>Persist pending state.</strong> SQLite file. $0 cost, ~40 LOC, eliminates the crash-data-loss problem that will otherwise define the user experience.</li>
+    <li><strong>Per-client service accounts.</strong> The config schema already supports it. It's an operational task to create separate keys, not a code change. Do it before the second client is onboarded.</li>
+    <li><strong>Restructure the state machine.</strong> Per-chat state with explicit enum transitions. Eliminates the race condition that causes documents to be misattributed.</li>
+  </ol>
+
+  <p><strong>Should you start the test service?</strong> Yes — the test bot (AFH_22, chat <code>-1004391863263</code>) is the right environment to shake out the engineering issues. But do not start the Edmonds Villa production bot until the pending state is persistent and the service account is scoped to one tenant. The first production document should be filed with crash-safe persistence in place.</p>
+
+  <p><strong>What's the upgrade path?</strong> Items SP-2 (state persistence) and SP-4 (state machine) can be implemented together — the SQLite-backed per-chat state is a single refactor. SP-3 (service accounts) is operational, not code. EI-2 (test paths) is a 5-minute fix. The DeepSeek question (EI-1) is a design taste call — it works, it's just extraneous complexity. These are B-grade issues in a B+ design. Fix them and you're ready for production.</p>
+
+  <div class="highlight-box info" style="margin-top:24px;">
+    <h4>📋 Recommended Action Order</h4>
+    <ol>
+      <li><strong>Before first test run:</strong> SP-4 (state machine restructure), EI-2 (test paths) — these don't affect the live deployment, do them in-code first</li>
+      <li><strong>Before production (Edmonds Villa):</strong> SP-2 (state persistence), SP-3 (per-client service accounts), EI-3 (file guards), EI-4 (doc ID logging)</li>
+      <li><strong>First production month:</strong> OP-1 (temp file cleanup), QF-1 (Tier 3 feedback), QF-2 (extension whitelist)</li>
+      <li><strong>Post-launch polish:</strong> SP-1 (roster cache), EI-1 (DeepSeek vs Haiku decision)</li>
+    </ol>
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  <p>Employee Docs Bot — Design Review v1.0.0 &nbsp;·&nbsp; 2026-06-24 16:30 UTC-7 &nbsp;·&nbsp; <a href="https://omegadigital.ai">Omega Digital Services</a> &nbsp;·&nbsp; Confidential</p>
+</div>
+
+</body>
+</html>
