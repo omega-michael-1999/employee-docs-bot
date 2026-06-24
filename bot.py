@@ -1079,7 +1079,7 @@ def main():
 
     # Start heartbeat monitoring (pings every 5 min)
     if HEARTBEAT_URL:
-        heartbeat_handle = asyncio.ensure_future(heartbeat_task(app))
+        app.create_task(heartbeat_task(app), "heartbeat")
         log.info(f"Heartbeat monitoring active → {HEARTBEAT_URL}")
     else:
         log.info("No HEARTBEAT_URL set — monitoring disabled")
