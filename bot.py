@@ -775,8 +775,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle text replies for corrections."""
+    text_msg = update.channel_post or update.message
+    if text_msg is None:
+        return
+
     chat_id = update.effective_chat.id
-    text = update.message.text.strip()
+    text = text_msg.text.strip()
 
     async with get_chat_lock(chat_id):
         session = chat_states.get(chat_id)
@@ -792,7 +796,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.state = ChatState.AWAITING_DOCUMENT_TYPE
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
-            await msg.reply_text(
+            await text_msg.reply_text(
                 "What type of document is this?\n"
                 "Examples: CPR Certificate, TB Test Results, Driver's License, Background Check, etc."
             )
@@ -806,7 +810,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.state = ChatState.AWAITING_CONFIRMATION
             session.message_id = 0  # Will be set when we send the confirmation
 
-            msg = await update.message.reply_text(
+            confirm_msg = await text_msg.reply_text(
                 f"📄 Filing as **{session.category}** for **{session.employee}**.\nIs that right?",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
@@ -814,7 +818,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      InlineKeyboardButton("👎 No", callback_data="confirm_no")]
                 ])
             )
-            session.message_id = msg.message_id
+            session.message_id = confirm_msg.message_id
             session.awaiting = ""
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
@@ -825,7 +829,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             session.state = ChatState.AWAITING_DOCUMENT_TYPE
             chat_states[chat_id] = session
             save_session(DB_PATH, session)
-            await msg.reply_text(
+            await text_msg.reply_text(
                 "What type of document is this?\n"
                 "Examples: CPR Certificate, TB Test Results, Driver's License"
             )
