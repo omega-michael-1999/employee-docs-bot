@@ -819,7 +819,17 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # No pending session — treat as natural language query
             client = next((c for c in CONFIG["clients"] if c["chat_id"] == chat_id), None)
             reply = await _answer_nl_query(text, chat_id, client)
-            await text_msg.reply_text(reply)
+            try:
+                await text_msg.reply_text(reply)
+            except Exception:
+                # reply_text fails in channels — fall back to direct API call
+                import httpx
+                token = context.bot.token if hasattr(context.bot, 'token') else TELEGRAM_TOKEN
+                async with httpx.AsyncClient() as hclient:
+                    await hclient.post(
+                        f"https://api.telegram.org/bot{token}/sendMessage",
+                        json={"chat_id": chat_id, "text": reply},
+                    )
             return
 
         state = session.awaiting
