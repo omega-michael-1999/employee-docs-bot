@@ -31,6 +31,8 @@ EMPLOYEE_ROSTER = {
     "nicholas kachu khamali": {"name": "Nicholas Kachu Khamali"},
     "philomena joseph renaux": {"name": "Philomena Joseph Renaux"},
     "philomena renaux": {"name": "Philomena Renaux"},
+    "jayden kambi omondi": {"name": "Jayden Kambi Omondi"},
+    "jayden omondi": {"name": "Jayden Omondi"},
 }
 
 # Category keywords matching the config.json schema
