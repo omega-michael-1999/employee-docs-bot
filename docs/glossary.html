@@ -80,7 +80,7 @@
   <table>
     <tr><th>Decision</th><th>Choice</th></tr>
     <tr><td>Bot Runtime</td><td>Single Python script using <code>python-telegram-bot</code>. One systemd service per Telegram bot token (test + production), each sharing the same <code>config.json</code>.</td></tr>
-    <tr><td>Document Classification</td><td>Three-tier: (1) rules keyword match with word-boundary checks, (2) if ambiguous, the rules result is treated as a hint and elevated to Claude Haiku LLM, (3) if LLM fails → manual inline-keyboard correction with explanatory fallback message.</td></tr>
+    <tr><td>Document Classification</td><td>Two-tier: (1) Claude Haiku LLM classifies every document — handles name variations, OCR noise, and document context without hardcoded rules; (2) if LLM fails → manual correction. After extraction, bot shows extraction status (<code>✅ Document text found: N chars</code> or <code>❌ Could not read</code>) with identified employee name and document type before entering the correction flow.</td></tr>
     <tr><td>OCR / Text Extraction</td><td><code>doc-extract.py</code>. Uses PyMuPDF + Anthropic Haiku vision for scanned docs. HEIC/HEIF via <code>pillow-heif</code>.</td></tr>
     <tr><td>Drive Auth</td><td>Per-client Google service accounts. Each client has their own SA key with Editor access scoped to their Drive folder only. Eliminates cross-tenant blast radius.</td></tr>
     <tr><td>Confirmation UX</td><td>Inline keyboard buttons [👍 Yes] [👎 No]. Correction via two sequential text prompts. Only entered when a pending state exists for that chat.</td></tr>

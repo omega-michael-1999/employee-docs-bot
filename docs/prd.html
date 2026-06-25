@@ -72,7 +72,7 @@
 
 <div class="section">
   <h2><span class="accent"></span>Solution</h2>
-  <p>A Telegram bot that receives employee documents, automatically extracts text via OCR, classifies by employee name and WAC document category using a hybrid rules + LLM approach, confirms the classification with the AFH administrator via inline buttons, and files to the correct Google Drive folder. The AFH administrator's interaction: send photo → tap 👍 or 👎 → done.</p>
+  <p>A Telegram bot that receives employee documents, automatically extracts text via OCR, classifies by employee name and WAC document category using Claude Haiku, confirms the classification with the AFH administrator via inline buttons, and files to the correct Google Drive folder. The AFH administrator's interaction: send photo → tap 👍 or 👎 → done.</p>
 </div>
 
 <div class="section">
@@ -89,7 +89,7 @@
     <li><strong>As the Omega Digital administrator</strong>, I want to add a new AFH client's Telegram chat ID and Drive folder to a config file, so that the same bot serves multiple AFHs without separate deployments.</li>
     <li><strong>As an AFH administrator</strong>, I want to run a compliance check against WAC 388-76 that knows which employees are providers (01–08 + facility docs) vs. caregivers (01–07 only), so that the audit respects regulatory differences.</li>
     <li><strong>As the Omega Digital administrator</strong>, I want the bot to run as a systemd service that auto-restarts on failure and logs to journald, so that it stays up without manual intervention.</li>
-    <li><strong>As the Omega Digital administrator</strong>, I want classification to use rules for fast common cases and fall back to an LLM for ambiguous ones, so that accuracy is high without paying for an LLM call on every document.</li>
+    <li><strong>As the Omega Digital administrator</strong>, I want classification to use Claude Haiku for every document, so that name variations, OCR noise, and document context are handled accurately without maintaining hardcoded keyword rules.</li>
     <li><strong>As the Omega Digital administrator</strong>, I want the test and production clients as separate Telegram bot instances sharing the same config, so that testing doesn't interfere with live filing.</li>
     <li><strong>As the Omega Digital administrator</strong>, I want the deployment at <code>/opt/employee-docs-bot/</code> as a git checkout owned by my user, so that I can browse, edit, and git pull without permission hassles.</li>
   </ol>
@@ -114,7 +114,13 @@
   <ol style="list-style-type:decimal; padding-left:20px;">
     <li><strong>Receive</strong> — Telegram photo, PDF, or image file (<20MB). HEIC supported via <code>pillow-heif</code>. Unsupported types rejected with guidance.</li>
     <li><strong>Extract text</strong> — <code>doc-extract.py</code>: PyPDF2 for PDF text, Anthropic Haiku vision for scanned, native DOCX/TXT. 300s timeout.</li>
-    <li><strong>Classify</strong> — Three-tier: rules → LLM (Claude Haiku 4.5, if ambiguous) → manual correction with explanatory fallback message.</li>
+    <li><strong>Show extraction status</strong> — After text extraction, bot shows the user what it found:
+      <ul>
+        <li><strong>Text found:</strong> <code>✅ Document text found: 1293 characters, text looks good</code> with the employee name and document type the bot identified (or "Unknown" if classification failed).</li>
+        <li><strong>No text:</strong> <code>❌ Could not read the document</code> with employee and type both marked Unknown.</li>
+      </ul>
+    </li>
+    <li><strong>Classify</strong> — Two-tier: LLM (Claude Haiku 4.5) for every document → manual correction if LLM fails. LLM handles name variations and OCR noise better than hardcoded keyword rules.</li>
     <li><strong>Confirm</strong> — Inline keyboard [👍 Yes] [👎 No]. Text correction flow if wrong. Only entered when a pending state exists for that chat.</li>
     <li><strong>File</strong> — Upload to <code>DRIVE_ROOT/CAREGIVERS/{Employee}/{Category}/{Name} - {Description}.{ext}</code> + companion <code>-robot.txt</code>.</li>
     <li><strong>Onboard new employee</strong> — Create employee folder with all 8 WAC subfolders if name not found.</li>
@@ -164,7 +170,7 @@
   <ol>
     <li><strong>End-to-end:</strong> Send a real document via test Telegram channel, verify classification, confirmation, and Drive filing.</li>
     <li><strong><code>doc-extract.py</code> standalone:</strong> Test against PDF text, scanned PDF, JPEG, HEIC, DOCX, PNG, TIFF.</li>
-    <li><strong>Classification logic:</strong> Unit tests for <code>classify_by_rules</code> and <code>classify_by_llm</code> with known rosters and text.</li>
+    <li><strong>Classification logic:</strong> Unit tests for <code>classify_by_llm</code> with known rosters and text. Integration tests for the full classify-and-confirm pipeline via mocked Telegram updates.</li>
     <li><strong>Drive API integration:</strong> Folder listing, creation, and upload against the AFH_22 test folder.</li>
     <li><strong>Confirmation flow state machine:</strong> <code>pending</code> dict transitions — all branches including corrections, new employees, and expiry.</li>
   </ol>

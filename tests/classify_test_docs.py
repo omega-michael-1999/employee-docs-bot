@@ -94,21 +94,17 @@ def classify_file(filepath: Path) -> dict:
     sys.path.insert(0, str(REPO_ROOT))
     import bot as bot_mod
 
-    # Run rules classification
-    emp, cat, conf = bot_mod.classify_by_rules(text, filename, CAT_KEYWORDS, employees)
-
-    # Run LLM classification if API key is available
-    emp_llm, cat_llm = None, None
-    llm_used = False
+    # Run LLM classification (all documents go through the LLM now)
     api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or _load_env_key()
-    if api_key and (not emp or conf != "high"):
+    emp, cat = None, None
+    llm_used = False
+    if api_key:
         old_key = os.environ.get("ANTHROPIC_VISION_API_KEY")
         os.environ["ANTHROPIC_VISION_API_KEY"] = api_key
         import importlib
         importlib.reload(bot_mod)
         try:
-            emp_llm, cat_llm = bot_mod.classify_by_llm(text, filename, employees, CAT_KEYWORDS,
-                                                       hint_emp=emp, hint_cat=cat)
+            emp, cat = bot_mod.classify_by_llm(text, filename, employees, CAT_KEYWORDS)
             llm_used = True
         except Exception as e:
             pass
@@ -123,15 +119,10 @@ def classify_file(filepath: Path) -> dict:
         "source_file": filepath.name,
         "text_length": len(text),
         "text_preview": text_preview,
-        "rules": {
-            "employee": emp,
-            "category": cat,
-            "confidence": conf,
-        },
         "llm": {
             "used": llm_used,
-            "employee": emp_llm,
-            "category": cat_llm,
+            "employee": emp,
+            "category": cat,
         },
     }
 
@@ -152,22 +143,13 @@ def _load_env_key() -> str | None:
 
 def format_result(doc_name: str, result: dict) -> str:
     """Format a result line for console output."""
-    rules = result.get("rules", {})
-    emp = rules.get("employee") or "—"
-    cat = rules.get("category") or "—"
-    conf = rules.get("confidence") or "—"
-
     llm = result.get("llm", {})
-    if llm.get("used"):
-        emp_llm = llm.get("employee") or "—"
-        cat_llm = llm.get("category") or "—"
-        llm_part = f"  LLM: emp={emp_llm}, cat={cat_llm}"
-    else:
-        llm_part = ""
+    emp = llm.get("employee") or "—"
+    cat = llm.get("category") or "—"
 
     icon = "✅" if emp != "—" and cat != "—" else "❌" if emp == "—" and cat == "—" else "⚠️"
     chars = result.get("text_length", 0)
-    return f"{icon} {emp:<25} {cat:<35} {conf:<6} {chars:>5}ch  {doc_name}{llm_part}"
+    return f"{icon} {emp:<25} {cat:<35} {chars:>5}ch  {doc_name}"
 
 
 def main():
@@ -186,7 +168,7 @@ def main():
 
     print(f"Classifying {len(files)} document(s) in {TEST_DIR}")
     print(f"{'='*110}")
-    print(f"{'EMP':<25} {'CATEGORY':<35} {'CONF':<6} {'SIZE':<6}  FILE")
+    print(f"{'EMP':<25} {'CATEGORY':<35} {'SIZE':<6}  FILE")
     print(f"{'-'*110}")
 
     results = []
@@ -204,12 +186,12 @@ def main():
     print(f"{'='*110}")
     total = len(results)
     full_match = sum(1 for _, r in results
-                     if r["rules"]["employee"] and r["rules"]["category"])
+                     if r["llm"]["employee"] and r["llm"]["category"])
     partial = sum(1 for _, r in results
-                  if (r["rules"]["employee"] or r["rules"]["category"])
-                  and not (r["rules"]["employee"] and r["rules"]["category"]))
+                  if (r["llm"]["employee"] or r["llm"]["category"])
+                  and not (r["llm"]["employee"] and r["llm"]["category"]))
     no_match = sum(1 for _, r in results
-                   if not r["rules"]["employee"] and not r["rules"]["category"])
+                   if not r["llm"]["employee"] and not r["llm"]["category"])
     print(f"\nTotal: {total}  Full match: {full_match}  Partial: {partial}  No match: {no_match}")
 
 

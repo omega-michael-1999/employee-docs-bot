@@ -355,79 +355,6 @@ WAC_CATEGORIES = [
     "07 - Nurse Delegation", "08 - Administrator Training"
 ]
 
-def _word_boundary_match(needle, haystack):
-    """Check if needle appears as a whole word in haystack."""
-    if not needle or not haystack:
-        return False
-    try:
-        pattern = r'(?<![a-zA-Z])' + re.escape(needle) + r'(?![a-zA-Z])'
-        return bool(re.search(pattern, haystack))
-    except re.error:
-        return needle in haystack
-
-
-def _emp_confidence(key):
-    """High confidence if the name has multiple words (full name), low if single-word."""
-    name_part = key.split(",")[0].strip()
-    return "high" if " " in name_part else "low"
-
-
-def _keyword_shared_count(keyword, cat_keywords):
-    """Count how many categories a keyword appears in."""
-    count = 0
-    for kws in cat_keywords.values():
-        if keyword in kws:
-            count += 1
-    return count
-
-
-def classify_by_rules(text, filename, cat_keywords, employees):
-    """Try to classify by keyword matching.
-
-    Returns (employee_name, category, confidence).
-    confidence is "high", "low", or None.
-    """
-    text_lower = text.lower() if text else ""
-    fname_lower = filename.lower() if filename else ""
-    combined = f"{text_lower} {fname_lower}"
-
-    # Find employee
-    emp_match = None
-    emp_conf = None
-    for key, info in employees.items():
-        parts = key.split(",")[0].strip()
-        if _word_boundary_match(parts.lower(), combined):
-            emp_match = info["name"]
-            emp_conf = _emp_confidence(key)
-            break
-
-    # Find category and track which keyword matched
-    cat_match = None
-    cat_conf = None
-    matched_kw = None
-    for cat, kws in cat_keywords.items():
-        for kw in kws:
-            if _word_boundary_match(kw.lower(), combined):
-                cat_match = cat
-                matched_kw = kw
-                break
-        if cat_match:
-            break
-
-    # Determine category confidence
-    if cat_match and matched_kw:
-        shared = _keyword_shared_count(matched_kw, cat_keywords)
-        cat_conf = "low" if shared > 1 else "high"
-
-    # Overall confidence: high only if both emp and cat are high
-    if emp_match and cat_match:
-        if emp_conf == "high" and cat_conf == "high":
-            return emp_match, cat_match, "high"
-        else:
-            return emp_match, cat_match, "low"
-
-    # Partial match — return what we found, even if one is None
-    return emp_match, cat_match, None
 
 
 def parse_json_from_llm(content: str) -> dict | None:
@@ -520,31 +447,22 @@ Document text:
 
 
 def classify(text, filename, cat_keywords, employees):
-    """Three-tier: rules (with confidence) → LLM → manual.
+    """Two-tier: LLM → manual correction.
+
+    Every document is classified by Claude Haiku, which handles name
+    variations, OCR noise, and document context better than hardcoded
+    keyword rules.
 
     Returns (employee, category, method) where method is one of
-    "rules", "llm", or "failed".
+    "llm" or "failed".
     """
-    emp, cat, conf = classify_by_rules(text, filename, cat_keywords, employees)
+    emp, cat = classify_by_llm(text, filename, employees, cat_keywords)
 
-    # Tier 1: High-confidence rules match — return immediately
-    if conf == "high":
-        log.info(f"Rules classified (high confidence): {emp} / {cat}")
-        return emp, cat, "rules"
-
-    # Tier 2: Low confidence or partial match — elevate to LLM with hint
     if emp or cat:
-        log.info(f"Rules classified (low confidence): {emp or '?'} / {cat or '?'} — elevating to LLM")
-        emp2, cat2 = classify_by_llm(text, filename, employees, cat_keywords,
-                                      hint_emp=emp, hint_cat=cat)
-    else:
-        emp2, cat2 = classify_by_llm(text, filename, employees, cat_keywords)
+        log.info(f"LLM classified: {emp or '?'} / {cat or '?'}")
+        return emp, cat, "llm"
 
-    if emp2 or cat2:
-        log.info(f"LLM classified: {emp2 or '?'} / {cat2 or '?'}")
-        return emp2, cat2, "llm"
-
-    # Tier 3: LLM also failed — manual correction
+    # LLM failed — manual correction
     log.info("Classification failed — manual correction needed")
     return None, None, "failed"
 

@@ -71,7 +71,7 @@
 
 <div class="section">
   <h2><span class="accent"></span>System Overview</h2>
-  <p>The Employee Docs Bot is a document filing system for Washington State adult family homes. It receives employee documents via Telegram, extracts text via OCR, classifies by employee and WAC category using a hybrid rules+LLM approach, confirms classifications with the AFH administrator, and files documents into Google Drive with proper naming and metadata.</p>
+  <p>The Employee Docs Bot is a document filing system for Washington State adult family homes. It receives employee documents via Telegram, extracts text via OCR, classifies by employee and WAC category using Claude Haiku, confirms classifications with the AFH administrator, and files documents into Google Drive with proper naming and metadata.</p>
   <p>Designed as a single Python process per Telegram bot token, sharing a multi-tenant configuration file. Runs on a single Linux server (hive) under systemd.</p>
 </div>
 
@@ -165,8 +165,8 @@ WantedBy=multi-user.target</pre>
 ┌─────────────────┐
 │   <span class="highlight">Classify</span>         │  Three-tier hybrid:
 │                  │
-│   ┌──────┐      │  1. Rules (word-boundary keywords)
-│   │  ?   │      │  2. LLM (DeepSeek) if ambiguous
+│   ┌──────┐      │  1. LLM (Claude Haiku 4.5)
+│   │  ?   │      │  2. Manual correction if LLM fails
 │   └──┬───┘      │  3. Manual correction if all fail
 └────────┬────────┘
          │
@@ -186,24 +186,18 @@ WantedBy=multi-user.target</pre>
 <div class="section">
   <h2><span class="accent"></span>Classification Tier Logic</h2>
 
-  <h3>Tier 1: Rules</h3>
+  <h3>Tier 1: LLM (Claude Haiku 4.5)</h3>
   <ul>
-    <li>Word-boundary regex match against extracted text and filename for each employee name.</li>
-    <li>Substring keyword arrays per WAC category (e.g., <code>"cpr"</code> → "04 - CPR &amp; First Aid").</li>
-    <li>Weak matches (single-word name, generic keyword) flagged as ambiguous and escalated.</li>
-  </ul>
-
-  <h3>Tier 2: LLM (DeepSeek)</h3>
-  <ul>
-    <li>Called when rules produce ambiguous results. Receives extracted text + rules result as hint.</li>
-    <li>DeepSeek returns JSON: <code>{"employee", "category", "description"}</code>.</li>
+    <li>Claude Haiku classifies every document — no hardcoded keyword rules.</li>
+    <li>LLM receives extracted text, filename, employee roster, and WAC category list.</li>
+    <li>Returns JSON: <code>{"employee": "Full Name", "category": "Category Name", "description": "brief description"}</code>.</li>
     <li>Output validated against known roster and categories before acceptance. 30s network timeout.</li>
   </ul>
 
-  <h3>Tier 3: Manual Correction</h3>
+  <h3>Tier 2: Manual Correction</h3>
   <ul>
     <li>Two-step text prompt: (1) employee name with optional "🆕 New Employee" button, (2) document type description.</li>
-    <li>Free-text description mapped to WAC category via <code>match_category</code> keyword lookup.</li>
+    <li>Free-text description mapped to WAC category via keyword lookup.</li>
     <li>Final confirmation button before filing.</li>
   </ul>
 </div>
@@ -263,7 +257,7 @@ WantedBy=multi-user.target</pre>
     <tr><th>Concern</th><th>Approach</th></tr>
     <tr><td>Drive access</td><td>Service account with Editor on specific folders. Key file gitignored, readable only by OS user.</td></tr>
     <tr><td>Bot tokens</td><td>Stored in <code>.env</code> files (gitignored). Separate test and production.</td></tr>
-    <tr><td>API keys</td><td>Anthropic and DeepSeek keys in <code>.env</code>.</td></tr>
+    <tr><td>API keys</td><td>Anthropic keys in <code>.env</code>.</td></tr>
     <tr><td>Channel trust</td><td>Bot responds to any message in configured chat IDs. Suitable for private AFH channel.</td></tr>
     <tr><td>Temp files</td><td>Downloaded to <code>/tmp</code>, deleted after processing.</td></tr>
     <tr><td>OS user</td><td>Runs as <code>michael</code> (Omega Digital administrator, unprivileged) under systemd.</td></tr>
@@ -309,7 +303,7 @@ WantedBy=multi-user.target</pre>
     <tr><td>Roster cache with 30-min TTL</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>Doc UUID tracing for pipeline observability</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>File size + type guards at handler level</td><td><span class="tag tag-green">Done</span></td></tr>
-    <tr><td>DeepSeek → Claude Haiku for Tier 2 classification</td><td><span class="tag tag-green">Done</span></td></tr>
+    <tr><td>Claude Haiku for all classification (no hardcoded rules)</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>Test harness fix (pytest config, local dev)</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>Temp file cleanup registry + startup sweep</td><td><span class="tag tag-green">Done</span></td></tr>
     <tr><td>Tier 3 fallback feedback messages</td><td><span class="tag tag-green">Done</span></td></tr>

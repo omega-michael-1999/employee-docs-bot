@@ -37,11 +37,14 @@ def patch_config_and_extract(tmp_path):
     """Patch bot's CONFIG, DB_PATH, and external calls for all tests."""
     import bot
     db_path = tmp_path / "pending.db"
+    # classify() now goes directly to LLM — mock it so tests don't need a real API key
     with patch.object(bot, "CONFIG", TEST_CONFIG):
         with patch.object(bot, "DB_PATH", db_path):
             with patch.object(bot, "extract_text", return_value="Fatou Manneh CPR card expired 2026"):
-                bot.init_db(str(db_path))
-                yield
+                with patch.object(bot, "classify_by_llm",
+                                  return_value=("Fatou Manneh", "04 - CPR & First Aid")):
+                    bot.init_db(str(db_path))
+                    yield
 
 
 def _make_chat(chat_id=TEST_CHAT_ID):
@@ -101,6 +104,34 @@ async def _make_update_with_document(chat_id=TEST_CHAT_ID, file_name="test_cpr.p
     return update, msg
 
 
+async def _make_text_update(chat_id, text, use_channel_post=False):
+    """Build a minimal Update with a text message (or channel_post)."""
+    chat = _make_chat(chat_id)
+    user = _make_user()
+
+    reply_result = MagicMock(spec=Message)
+    reply_result.message_id = 99
+
+    msg = MagicMock(spec=Message)
+    msg.message_id = 99
+    msg.text = text
+    msg.chat = chat
+    msg.from_user = user
+    msg.reply_text = AsyncMock(return_value=reply_result)
+    msg.effective_chat = chat
+
+    update = MagicMock(spec=Update)
+    update.update_id = 3
+    update.message = msg
+    update.channel_post = msg if use_channel_post else None
+    update.callback_query = None
+    update.effective_chat = chat
+    update.effective_message = msg
+    update.effective_user = user
+
+    return update, msg
+
+
 async def _make_callback_update(chat_id, message_id, data, original_message=None):
     """Build a minimal Update with a CallbackQuery."""
     chat = _make_chat(chat_id)
@@ -119,6 +150,7 @@ async def _make_callback_update(chat_id, message_id, data, original_message=None
     update = MagicMock(spec=Update)
     update.update_id = 2
     update.message = None
+    update.channel_post = None
     update.callback_query = cq
     update.effective_chat = chat
     update.effective_message = msg
@@ -163,24 +195,22 @@ class TestHandlerOrchestration:
     async def test_text_with_no_pending_is_ignored(self, mock_context):
         """Sending text without a pending session should silently return."""
         import bot
-        chat = _make_chat()
-        user = _make_user()
+        update, msg = await _make_text_update(TEST_CHAT_ID, "Hello, bot")
 
-        msg = MagicMock(spec=Message)
-        msg.message_id = 99
-        msg.text = "Hello, bot"
-        msg.chat = chat
-        msg.from_user = user
-        msg.reply_text = AsyncMock()
+        orig_states = dict(bot.chat_states)
+        bot.chat_states.clear()
+        try:
+            await bot.handle_text(update, mock_context)
+            msg.reply_text.assert_not_called()
+        finally:
+            bot.chat_states.clear()
+            bot.chat_states.update(orig_states)
 
-        update = MagicMock(spec=Update)
-        update.update_id = 3
-        update.message = msg
-        update.channel_post = None
-        update.callback_query = None
-        update.effective_chat = chat
-        update.effective_message = msg
-        update.effective_user = user
+    @pytest.mark.anyio
+    async def test_text_in_channel_with_no_pending_is_ignored(self, mock_context):
+        """Text via channel_post without pending session should silently return."""
+        import bot
+        update, msg = await _make_text_update(TEST_CHAT_ID, "Hello channel", use_channel_post=True)
 
         orig_states = dict(bot.chat_states)
         bot.chat_states.clear()
@@ -327,6 +357,110 @@ class TestHandlerOrchestration:
             call_text = msg.reply_text.call_args[0][0]
             assert "TIFF" in call_text
             assert "I can only process" in call_text
+        finally:
+            bot.chat_states.clear()
+            bot.chat_states.update(orig_states)
+
+    # --- Correction flow text handler tests ---
+
+    @pytest.mark.anyio
+    async def test_correction_flow_employee_name_sets_session(self, mock_context):
+        """Typing employee name in correction flow transitions to category awaiting."""
+        import bot
+        # First, get into correction flow: send doc -> click No
+        update, doc_msg = await _make_update_with_document()
+        orig_states = dict(bot.chat_states)
+        bot.chat_states.clear()
+        try:
+            with patch.object(bot, "get_drive_service"):
+                with patch.object(bot, "list_employee_folders",
+                                  return_value={"fatou manneh": {"id": "f1", "name": "Fatou Manneh"}}):
+                    await bot.handle_document(update, mock_context)
+
+            # Click No
+            cb_update = await _make_callback_update(TEST_CHAT_ID, 42, "confirm_no")
+            await bot.handle_callback(cb_update, mock_context)
+
+            # Now type employee name via message
+            text_update, text_msg = await _make_text_update(TEST_CHAT_ID, "Test Employee")
+            await bot.handle_text(text_update, mock_context)
+
+            session = bot.chat_states.get(TEST_CHAT_ID)
+            assert session is not None
+            assert session.employee == "Test Employee"
+            assert session.awaiting == "category"
+            assert session.state == bot.ChatState.AWAITING_DOCUMENT_TYPE
+            text_msg.reply_text.assert_called_once()
+            call_text = text_msg.reply_text.call_args[0][0]
+            assert "type of document" in call_text.lower()
+        finally:
+            bot.chat_states.clear()
+            bot.chat_states.update(orig_states)
+
+    @pytest.mark.anyio
+    async def test_correction_flow_channel_post_sets_employee_name(self, mock_context):
+        """Typing employee name via channel_post should work (channel users)."""
+        import bot
+        update, doc_msg = await _make_update_with_document()
+        orig_states = dict(bot.chat_states)
+        bot.chat_states.clear()
+        try:
+            with patch.object(bot, "get_drive_service"):
+                with patch.object(bot, "list_employee_folders",
+                                  return_value={"fatou manneh": {"id": "f1", "name": "Fatou Manneh"}}):
+                    await bot.handle_document(update, mock_context)
+
+            cb_update = await _make_callback_update(TEST_CHAT_ID, 42, "confirm_no")
+            await bot.handle_callback(cb_update, mock_context)
+
+            # Type employee name via channel_post (simulates channel admin typing)
+            cp_update, cp_msg = await _make_text_update(TEST_CHAT_ID, "Channel Employee", use_channel_post=True)
+            await bot.handle_text(cp_update, mock_context)
+
+            session = bot.chat_states.get(TEST_CHAT_ID)
+            assert session is not None
+            assert session.employee == "Channel Employee"
+            assert session.awaiting == "category"
+            cp_msg.reply_text.assert_called_once()
+            call_text = cp_msg.reply_text.call_args[0][0]
+            assert "type of document" in call_text.lower()
+        finally:
+            bot.chat_states.clear()
+            bot.chat_states.update(orig_states)
+
+    @pytest.mark.anyio
+    async def test_correction_flow_channel_post_category_then_confirmation(self, mock_context):
+        """Full text correction flow via channel_post: name -> category -> confirm."""
+        import bot
+        update, doc_msg = await _make_update_with_document()
+        orig_states = dict(bot.chat_states)
+        bot.chat_states.clear()
+        try:
+            with patch.object(bot, "get_drive_service"):
+                with patch.object(bot, "list_employee_folders",
+                                  return_value={"fatou manneh": {"id": "f1", "name": "Fatou Manneh"}}):
+                    await bot.handle_document(update, mock_context)
+
+            cb_update = await _make_callback_update(TEST_CHAT_ID, 42, "confirm_no")
+            await bot.handle_callback(cb_update, mock_context)
+
+            # Step 1: type employee via channel_post
+            cp_update, cp_msg = await _make_text_update(TEST_CHAT_ID, "Fatou Manneh", use_channel_post=True)
+            await bot.handle_text(cp_update, mock_context)
+
+            # Step 2: type document type via channel_post
+            cat_update, cat_msg = await _make_text_update(TEST_CHAT_ID, "CPR card", use_channel_post=True)
+            await bot.handle_text(cat_update, mock_context)
+
+            session = bot.chat_states.get(TEST_CHAT_ID)
+            assert session is not None
+            assert session.employee == "Fatou Manneh"
+            assert session.awaiting == ""
+            assert session.state == bot.ChatState.AWAITING_CONFIRMATION
+            # Should have replied with a confirmation message
+            cat_msg.reply_text.assert_called_once()
+            call_text = cat_msg.reply_text.call_args[0][0]
+            assert "Filing as" in call_text
         finally:
             bot.chat_states.clear()
             bot.chat_states.update(orig_states)
