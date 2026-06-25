@@ -82,15 +82,11 @@ journalctl -u employee-docs-bot-edmonds-villa -f
 
 ## Adding a New Client
 
-New clients can be added in two ways, depending on whether they need their own Telegram bot identity or can share an existing one.
+**Every production client gets its own isolated instance.** One client = one Telegram bot = one systemd service = one set of API keys. No sharing. This is not optional — it's the isolation principle.
 
-### Option A: New Client, New Instance (recommended for production)
+### Phase 1: Dev (subrepo)
 
-Each production client gets its own isolated instance with unique API keys. This follows the isolation principle.
-
-#### Phase 1: Dev (subrepo)
-
-Develop and test in the dev environment first:
+Develop and test in the dev environment first. The dev instance (AFH_22) is the staging ground for all new clients before they go to production.
 
 1. **Add the client to the dev config** — edit `~/github/ai-os/subrepos/employee-docs-bot/config.json`:
    ```json
@@ -104,22 +100,22 @@ Develop and test in the dev environment first:
      "providers": [ ... ]
    }
    ```
-2. **Add the test bot to the new client's Telegram chat** — the test bot (`8669...`) must be added to the chat to receive messages.
+2. **Add the test bot to the new client's Telegram chat** — the test bot (`8669...`) must be added as a member of the chat.
 3. **Restart the dev service** — `./deploy/restart-afh-22.sh`
-4. **Test** — send a document to the chat and verify it classifies correctly.
+4. **Test** — send a document to the chat and verify classification and drive storage work.
 
-#### Phase 2: Production
+### Phase 2: Production
 
 Once dev testing is clean, promote to production:
 
 1. **Provision API keys for the new instance:**
    - Register a new Telegram bot via [BotFather](https://t.me/BotFather) → get a unique token
    - Create a unique Anthropic API key from [console.anthropic.com](https://console.anthropic.com/settings/keys)
-   - Set up a heartbeat URL at [healthchecks.io](https://healthchecks.io) (or reuse pattern)
+   - Create a heartbeat URL at [healthchecks.io](https://healthchecks.io)
 
-2. **Deploy code to `/opt`** — sync the subrepo code to `/opt/employee-docs-bot/`:
+2. **Deploy code to `/opt`** — all production instances share the same codebase at `/opt/employee-docs-bot/`. Sync from the subrepo:
    ```bash
-   rsync -av --exclude='.env*' --exclude='.venv' \
+   rsync -av --exclude='.env*' --exclude='.venv' --exclude='.git' \
      ~/github/ai-os/subrepos/employee-docs-bot/ \
      /opt/employee-docs-bot/
    ```
@@ -136,9 +132,9 @@ Once dev testing is clean, promote to production:
    HEARTBEAT_URL=https://hc-ping.com/<uuid>
    ```
 
-4. **Add client to prod config** — edit `/opt/employee-docs-bot/config.json` with the client entry (same structure as dev, but production `chat_id` and drive folder).
+4. **Add client to the production config** — edit `/opt/employee-docs-bot/config.json` with the client entry (same structure as dev step 1, but with the real production `chat_id`, `drive_root_id`, and service account key).
 
-5. **Install the service** — create `/etc/systemd/system/employee-docs-bot-{client-name}.service`:
+5. **Install the systemd service** — create `/etc/systemd/system/employee-docs-bot-{client-name}.service`:
    ```ini
    [Unit]
    Description=Employee Docs Bot — Client Name (Production)
@@ -160,7 +156,7 @@ Once dev testing is clean, promote to production:
    WantedBy=multi-user.target
    ```
 
-6. **Reload and enable**:
+6. **Reload, enable, start**:
    ```bash
    sudo systemctl daemon-reload
    sudo systemctl enable employee-docs-bot-{client-name}
@@ -168,28 +164,18 @@ Once dev testing is clean, promote to production:
    ```
 
 7. **Add passwordless sudo** — create `/etc/sudoers.d/employee-docs-bot-{client-name}`:
-   ```bash
+   ```
    michael ALL=(root) NOPASSWD: /usr/bin/systemctl start employee-docs-bot-{client-name}
    michael ALL=(root) NOPASSWD: /usr/bin/systemctl stop employee-docs-bot-{client-name}
    michael ALL=(root) NOPASSWD: /usr/bin/systemctl restart employee-docs-bot-{client-name}
    michael ALL=(root) NOPASSWD: /usr/bin/systemctl status employee-docs-bot-{client-name}
    ```
 
-8. **Add the production bot to the target Telegram chat** — the new bot must be added as a member of the chat it will serve.
+8. **Add the production bot to the target Telegram chat** — the new bot must be a member.
 
 9. **Verify** — check logs: `journalctl -u employee-docs-bot-{client-name} -f`
 
-10. **Create deploy scripts** — add start/stop/restart/{client-name}.sh scripts in the subrepo `deploy/` folder following the existing pattern, then update `restart-all.sh` and `status.sh` to include the new instance.
-
-### Option B: Add Client to Existing Instance
-
-Simpler — just adds a new client to an already-running bot:
-
-1. Add the client entry to the instance's `config.json`
-2. Restart the service
-3. Add the bot to the client's Telegram chat
-
-Use this when the client can share an existing Telegram bot identity. The isolation trade-off is that API key usage metrics will aggregate all clients under that instance.
+10. **Create deploy scripts** — add start/stop/restart/{client-name}.sh in the subrepo `deploy/` folder following the existing pattern, then update `restart-all.sh` and `status.sh` to include the new instance.
 
 ## Promoting Dev Changes to Production
 
@@ -215,4 +201,4 @@ sudo systemctl restart employee-docs-bot-edmonds-villa
 - **Never share API keys across instances.** If usage spikes, unique keys let you identify and fix the offender without touching other clients.
 - **The subrepo `.env.afh-22` is gitignored** — it won't be committed. It's local to this server.
 - **Restart dev after code changes:** `sudo systemctl restart employee-docs-bot-afh-22`
-- **Promote to prod:** copy updated code to `/opt/employee-docs-bot/`, then restart the prod service.
+- **Promote to prod:** `rsync` subrepo → `/opt/`, then restart all prod instances.
