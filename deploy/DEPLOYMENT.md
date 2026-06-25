@@ -6,7 +6,7 @@ The Employee Docs Bot runs as **two separate systemd services** on this server (
 
 | Instance | Type | Service Name | Working Directory | Env File | Telegram Token |
 |----------|------|-------------|-------------------|----------|---------------|
-| AFH_22 | Dev/Test | `employee-docs-bot-afh-22` | `~/github/ai-os/subrepos/employee-docs-bot/` | `.env` (in subrepo) | Test bot: `8669...` |
+| AFH_22 | Dev/Test | `employee-docs-bot-afh-22` | `~/github/ai-os/subrepos/employee-docs-bot/` | `.env.afh-22` (in subrepo) | Test bot: `8669...` |
 | Edmonds Villa | Production | `employee-docs-bot-edmonds-villa` | `/opt/employee-docs-bot/` | `.env.edmonds-villa` | Prod bot: `8870...` |
 
 ## Architecture Principles
@@ -93,6 +93,6 @@ journalctl -u employee-docs-bot-edmonds-villa -f
 ## Hygiene
 
 - **Never share API keys across instances.** If usage spikes, unique keys let you identify and fix the offender without touching other clients.
-- **The subrepo `.env` is gitignored** — it won't be committed. It's local to this server.
+- **The subrepo `.env.afh-22` is gitignored** — it won't be committed. It's local to this server.
 - **Restart dev after code changes:** `sudo systemctl restart employee-docs-bot-afh-22`
 - **Promote to prod:** copy updated code to `/opt/employee-docs-bot/`, then restart the prod service.
