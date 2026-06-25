@@ -192,8 +192,8 @@ class TestHandlerOrchestration:
     """Integration tests for handler state machine orchestration."""
 
     @pytest.mark.anyio
-    async def test_text_with_no_pending_is_ignored(self, mock_context):
-        """Sending text without a pending session should silently return."""
+    async def test_text_with_no_pending_gets_nl_reply(self, mock_context):
+        """Sending text without a pending session gets an NL query reply."""
         import bot
         update, msg = await _make_text_update(TEST_CHAT_ID, "Hello, bot")
 
@@ -201,14 +201,16 @@ class TestHandlerOrchestration:
         bot.chat_states.clear()
         try:
             await bot.handle_text(update, mock_context)
-            msg.reply_text.assert_not_called()
+            msg.reply_text.assert_called_once()
+            # Should get the fallback message (no DEEPSEEK_API_KEY set in this test)
+            assert "I can only process documents" in msg.reply_text.call_args[0][0]
         finally:
             bot.chat_states.clear()
             bot.chat_states.update(orig_states)
 
     @pytest.mark.anyio
-    async def test_text_in_channel_with_no_pending_is_ignored(self, mock_context):
-        """Text via channel_post without pending session should silently return."""
+    async def test_text_in_channel_with_no_pending_gets_nl_reply(self, mock_context):
+        """Text via channel_post without pending session gets NL reply."""
         import bot
         update, msg = await _make_text_update(TEST_CHAT_ID, "Hello channel", use_channel_post=True)
 
@@ -216,7 +218,7 @@ class TestHandlerOrchestration:
         bot.chat_states.clear()
         try:
             await bot.handle_text(update, mock_context)
-            msg.reply_text.assert_not_called()
+            msg.reply_text.assert_called_once()
         finally:
             bot.chat_states.clear()
             bot.chat_states.update(orig_states)

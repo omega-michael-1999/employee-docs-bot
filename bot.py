@@ -30,6 +30,7 @@ with open(CONFIG_FILE) as f:
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_VISION_API_KEY", "")
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
 # Heartbeat monitoring (push-based — bot pings this URL every 5 min)
 HEARTBEAT_URL = os.environ.get("HEARTBEAT_URL", "")
@@ -744,8 +745,67 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("Sorry, this expired. Please send the document again.")
 
 
+async def _answer_nl_query(text: str, chat_id: int, client: dict | None = None) -> str:
+    """Answer a natural language question using DeepSeek.
+
+    Falls back to a generic message if DEEPSEEK_API_KEY is not set.
+    """
+    api_key = os.environ.get("DEEPSEEK_API_KEY", DEEPSEEK_API_KEY)
+    if not api_key:
+        return (
+            "I can only process documents for filing right now. "
+            "Send me a photo or PDF of an employee document and I'll file it."
+        )
+
+    emp_list = ""
+    if client:
+        try:
+            sa_key_path = Path(__file__).parent / client["service_account_key_file"]
+            drive = get_drive_service(str(sa_key_path))
+            from_cache = get_roster_cache(
+                _roster_cache,
+                client["drive_root_id"],
+                lambda: list_employee_folders(drive, client["drive_root_id"])
+            )
+            emp_list = ", ".join(sorted(set(v["name"] for v in from_cache.values())))
+        except Exception:
+            pass
+
+    prompt = (
+        "You are an assistant for an Adult Family Home document filing system. "
+        "Answer questions about employee documents, WAC compliance requirements, "
+        "and document filing. Be concise and helpful.\n\n"
+        f"Employees on file: {emp_list or 'unknown'}\n\n"
+        f"User question: {text}"
+    )
+
+    import urllib.request
+    payload = json.dumps({
+        "model": "deepseek-chat",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 500
+    })
+
+    try:
+        req = urllib.request.Request(
+            "https://api.deepseek.com/chat/completions",
+            data=payload.encode(),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        log.warning(f"DeepSeek NL query failed: {e}")
+        return "Sorry, I couldn't answer that right now. The language model is temporarily unavailable."
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle text replies for corrections."""
+    """Handle text replies for corrections and natural language queries."""
     text_msg = update.channel_post or update.message
     if text_msg is None:
         return
@@ -756,7 +816,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with get_chat_lock(chat_id):
         session = chat_states.get(chat_id)
         if session is None:
-            return  # No pending state for this chat — ignore text (scoped handler)
+            # No pending session — treat as natural language query
+            client = next((c for c in CONFIG["clients"] if c["chat_id"] == chat_id), None)
+            reply = await _answer_nl_query(text, chat_id, client)
+            await text_msg.reply_text(reply)
+            return
 
         state = session.awaiting
 
