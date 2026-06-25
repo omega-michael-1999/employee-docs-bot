@@ -432,12 +432,14 @@ def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint
         hint_line = f"\nRules suggest: employee={hint_emp or '?'}, category={hint_cat or '?'}. Verify if this is correct."
 
     prompt = f"""Given this document text, identify:
-1. Which employee does this belong to? Choose from: {emp_list}
+1. Which employee does this belong to? First try to match from: {emp_list}
+If the name is NOT in the list above, extract the full name from the document anyway.
 2. What document type is it? Choose EXACTLY ONE of these categories:
 {chr(10).join(f'  - {c}' for c in cat_keywords.keys())}
 {hint_line}
 Return ONLY valid JSON: {{"employee": "Full Name", "category": "<exact category from list>", "description": "brief description"}}
 The "category" field MUST be one of the exact categories listed above. Do not invent or modify category names.
+The "employee" field MUST be the person's actual full name extracted from the document text, even if not in the list above.
 
 Document text:
 {text[:3000]}"""
