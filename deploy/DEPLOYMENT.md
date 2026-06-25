@@ -113,11 +113,9 @@ Once dev testing is clean, promote to production:
    - Create a unique Anthropic API key from [console.anthropic.com](https://console.anthropic.com/settings/keys)
    - Create a heartbeat URL at [healthchecks.io](https://healthchecks.io)
 
-2. **Deploy code to `/opt`** — all production instances share the same codebase at `/opt/employee-docs-bot/`. Sync from the subrepo:
+2. **Deploy code to `/opt`** — all production instances share the same codebase at `/opt/employee-docs-bot/`. Pull the latest code:
    ```bash
-   rsync -av --exclude='.env*' --exclude='.venv' --exclude='.git' \
-     ~/github/ai-os/subrepos/employee-docs-bot/ \
-     /opt/employee-docs-bot/
+   cd /opt/employee-docs-bot && git pull
    ```
 
 3. **Create env file** — `/opt/employee-docs-bot/.env.{client-name}`:
@@ -179,13 +177,11 @@ Once dev testing is clean, promote to production:
 
 ## Promoting Dev Changes to Production
 
-Code changes are developed in the subrepo (dev instance) and promoted to `/opt/` (production instances) when stable:
+Code changes are developed in the subrepo (dev instance) and promoted to `/opt/` (production instances) when stable. Since `/opt/employee-docs-bot/` is a git clone of the same repo, promotion is a simple pull:
 
 ```bash
-# From the subrepo
-rsync -av --exclude='.env*' --exclude='.venv' --exclude='.git' --exclude='.gitignore' \
-  ~/github/ai-os/subrepos/employee-docs-bot/ \
-  /opt/employee-docs-bot/
+# Pull latest code in the production directory
+cd /opt/employee-docs-bot && git pull
 
 # Restart all prod instances
 ~/github/ai-os/subrepos/employee-docs-bot/deploy/restart-all.sh
@@ -194,11 +190,11 @@ rsync -av --exclude='.env*' --exclude='.venv' --exclude='.git' --exclude='.gitig
 sudo systemctl restart employee-docs-bot-edmonds-villa
 ```
 
-> `rsync` is used rather than `cp` because it's incremental — only changed files are copied. The `--exclude` flags ensure env files, venvs, and git metadata stay local to each environment.
+> `.env*`, `.venv/`, and `.service-account-keys/` are gitignored, so `git pull` won't overwrite them. Each production instance's env file and service account keys stay local to the server.
 
 ## Hygiene
 
 - **Never share API keys across instances.** If usage spikes, unique keys let you identify and fix the offender without touching other clients.
 - **The subrepo `.env.afh-22` is gitignored** — it won't be committed. It's local to this server.
 - **Restart dev after code changes:** `sudo systemctl restart employee-docs-bot-afh-22`
-- **Promote to prod:** `rsync` subrepo → `/opt/`, then restart all prod instances.
+- **Promote to prod:** `cd /opt/employee-docs-bot && git pull`, then restart all prod instances.
