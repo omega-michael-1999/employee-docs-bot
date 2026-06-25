@@ -654,13 +654,26 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Show user-friendly description (e.g. "CPR card") instead of WAC category code
         type_display = desc if desc else (cat if cat else "Unknown")
 
+        # Detect if the proposed employee is not yet in the roster
+        is_new_employee = emp and (emp.lower() not in employees)
+
         if emp and cat:
             # High confidence — extraction status + confirmation prompt
+            if is_new_employee:
+                prompt_text = (
+                    f"{status_icon} Document text found: {status_detail}\n\n"
+                    f"This looks like a **new employee**. "
+                    f"Is their name **{emp_display}**?"
+                )
+            else:
+                prompt_text = (
+                    f"{status_icon} Document text found: {status_detail}\n"
+                    f"Employee name: {emp_display}\n"
+                    f"Document type: {type_display}\n\n"
+                    f"Is this correct?"
+                )
             msg = await msg.reply_text(
-                f"{status_icon} Document text found: {status_detail}\n"
-                f"Employee name: {emp_display}\n"
-                f"Document type: {type_display}\n\n"
-                f"Is this correct?",
+                prompt_text,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("👍 Yes", callback_data="confirm_yes"),

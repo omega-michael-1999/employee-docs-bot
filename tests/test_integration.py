@@ -466,3 +466,30 @@ class TestHandlerOrchestration:
         finally:
             bot.chat_states.clear()
             bot.chat_states.update(orig_states)
+
+@pytest.mark.anyio
+async def test_new_employee_gets_distinct_confirmation(mock_context):
+    """Unknown employee name triggers 'new employee' confirmation with the proposed name."""
+    import bot
+    update, msg = await _make_update_with_document()
+
+    orig_states = dict(bot.chat_states)
+    bot.chat_states.clear()
+
+    with patch.object(bot, "get_drive_service"):
+        with patch.object(bot, "list_employee_folders",
+                          return_value={"fatou manneh": {"id": "f1", "name": "Fatou Manneh"}}):
+            with patch.object(bot, "classify_by_llm",
+                              return_value=("Saina Sheilah Jepkorir", "04 - CPR & First Aid", "CPR card")):
+                try:
+                    await bot.handle_document(update, mock_context)
+                    assert TEST_CHAT_ID in bot.chat_states
+                    session = bot.chat_states[TEST_CHAT_ID]
+                    assert session.state == bot.ChatState.AWAITING_CONFIRMATION
+                    assert msg.reply_text.call_count == 2
+                    call_text = msg.reply_text.call_args[0][0]
+                    assert "new employee" in call_text.lower()
+                    assert "Saina Sheilah Jepkorir" in call_text
+                finally:
+                    bot.chat_states.clear()
+                    bot.chat_states.update(orig_states)
