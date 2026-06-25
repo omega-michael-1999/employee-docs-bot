@@ -378,6 +378,46 @@ def parse_json_from_llm(content: str) -> dict | None:
     return None
 
 
+def _fuzzy_match_employee(proposed_name: str, employees: dict) -> str | None:
+    """Match a proposed name against the employee roster with fuzzy heuristics.
+
+    Tries (in order):
+    1. Exact case-insensitive match
+    2. All words from the roster name appear in the proposed name (or vice versa)
+       — catches "Jayden Kambi Omondi" matching roster "Jayden Omondi"
+    3. Last name matches AND first initial matches
+       — catches "Philomena Joseph Renaux" matching roster "Philomena Renaux"
+
+    Returns the roster employee's display name, or None if no match.
+    """
+    proposed_lower = proposed_name.lower().strip()
+    if not proposed_lower:
+        return None
+
+    # 1. Exact match
+    if proposed_lower in employees:
+        return employees[proposed_lower]["name"]
+
+    proposed_words = set(proposed_lower.split())
+
+    for key, info in employees.items():
+        roster_words = set(key.split())
+
+        # 2. Word-subset match
+        if roster_words.issubset(proposed_words) or proposed_words.issubset(roster_words):
+            return info["name"]
+
+        # 3. Last-name + first-initial match
+        roster_main = key.split(",")[0].strip()
+        roster_parts = roster_main.split()
+        proposed_parts = proposed_lower.split(",")[0].strip().split()
+        if roster_parts and proposed_parts:
+            if roster_parts[-1] == proposed_parts[-1] and roster_parts[0][0] == proposed_parts[0][0]:
+                return info["name"]
+
+    return None
+
+
 def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint_cat=None):
     """Fallback: use Claude Haiku to classify. Optional hints from rules result."""
     if not ANTHROPIC_API_KEY:
@@ -433,13 +473,19 @@ Document text:
         cat = result.get("category", "")
         desc = result.get("description", "")
 
-        # Validate against known lists
+        # Validate category against known list
         if cat and cat not in cat_keywords:
             log.info(f"LLM returned unknown category '{cat}' — clearing")
             cat = None
-        if emp and emp.lower() not in employees:
-            log.info(f"LLM returned unknown employee '{emp}' — clearing")
-            emp = None
+
+        # Match employee name against roster (fuzzy — catches middle name variations)
+        if emp:
+            matched = _fuzzy_match_employee(emp, employees)
+            if matched:
+                emp = matched  # Use the canonical roster name
+            else:
+                # Name not in roster — still propose it to the user
+                log.info(f"LLM proposed unknown employee '{emp}' — will propose to user")
 
         return emp, cat, desc
 
