@@ -382,7 +382,7 @@ def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint
     """Fallback: use Claude Haiku to classify. Optional hints from rules result."""
     if not ANTHROPIC_API_KEY:
         log.warning("ANTHROPIC_VISION_API_KEY not set — skipping LLM classification")
-        return None, None
+        return None, None, None
 
     emp_list = ", ".join(sorted(set(v["name"] for v in employees.values())))
     cat_list = ", ".join(cat_keywords.keys())
@@ -393,9 +393,11 @@ def classify_by_llm(text, filename, employees, cat_keywords, hint_emp=None, hint
 
     prompt = f"""Given this document text, identify:
 1. Which employee does this belong to? Choose from: {emp_list}
-2. What document type is it? Choose from the categories or describe it.
+2. What document type is it? Choose EXACTLY ONE of these categories:
+{chr(10).join(f'  - {c}' for c in cat_keywords.keys())}
 {hint_line}
-Return ONLY valid JSON: {{"employee": "Full Name", "category": "Category Name", "description": "brief description"}}
+Return ONLY valid JSON: {{"employee": "Full Name", "category": "<exact category from list>", "description": "brief description"}}
+The "category" field MUST be one of the exact categories listed above. Do not invent or modify category names.
 
 Document text:
 {text[:3000]}"""
@@ -425,10 +427,11 @@ Document text:
         result = parse_json_from_llm(content)
         if result is None:
             log.warning(f"Could not parse JSON from LLM response: {content[:300]}")
-            return None, None
+            return None, None, None
 
         emp = result.get("employee", "")
         cat = result.get("category", "")
+        desc = result.get("description", "")
 
         # Validate against known lists
         if cat and cat not in cat_keywords:
@@ -438,12 +441,12 @@ Document text:
             log.info(f"LLM returned unknown employee '{emp}' — clearing")
             emp = None
 
-        return emp, cat
+        return emp, cat, desc
 
     except Exception as e:
         log.warning(f"LLM classification failed: {e}")
 
-    return None, None
+    return None, None, None
 
 
 def classify(text, filename, cat_keywords, employees):
@@ -456,15 +459,15 @@ def classify(text, filename, cat_keywords, employees):
     Returns (employee, category, method) where method is one of
     "llm" or "failed".
     """
-    emp, cat = classify_by_llm(text, filename, employees, cat_keywords)
+    emp, cat, desc = classify_by_llm(text, filename, employees, cat_keywords)
 
     if emp or cat:
         log.info(f"LLM classified: {emp or '?'} / {cat or '?'}")
-        return emp, cat, "llm"
+        return emp, cat, desc, "llm"
 
     # LLM failed — manual correction
     log.info("Classification failed — manual correction needed")
-    return None, None, "failed"
+    return None, None, None, "failed"
 
 
 def is_provider(client, emp_name):
@@ -571,7 +574,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Classify
-    emp, cat, method = classify(text, fname, client.get("cat_keywords", {}), employees)
+    emp, cat, desc, method = classify(text, fname, client.get("cat_keywords", {}), employees)
 
     async with get_chat_lock(chat_id):
         dlog.info(f"Classification result: emp={emp or '?'}, cat={cat or '?'}, method={method}")
@@ -583,6 +586,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=text,
             employee=emp or "",
             category=cat or "",
+            description=desc or "",
             client=client,
             employees=employees,
             doc_id=doc_id,
@@ -598,14 +602,15 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             status_detail = "Could not read the document"
 
         emp_display = emp if emp else "Unknown"
-        cat_display = cat if cat else "Unknown"
+        # Show user-friendly description (e.g. "CPR card") instead of WAC category code
+        type_display = desc if desc else (cat if cat else "Unknown")
 
         if emp and cat:
             # High confidence — extraction status + confirmation prompt
             msg = await msg.reply_text(
                 f"{status_icon} Document text found: {status_detail}\n"
                 f"Employee name: {emp_display}\n"
-                f"Document type: {cat_display}\n\n"
+                f"Document type: {type_display}\n\n"
                 f"Is this correct?",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([
@@ -632,7 +637,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.reply_text(
                 f"{status_icon} Document text found: {status_detail}\n"
                 f"Employee name: {emp_display}\n"
-                f"Document type: {cat_display}\n\n"
+                f"Document type: {type_display}\n\n"
                 f"{prompt}",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup([[

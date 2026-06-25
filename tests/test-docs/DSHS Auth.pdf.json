@@ -2,14 +2,10 @@
   "source_file": "DSHS Auth.pdf",
   "text_length": 4877,
   "text_preview": "Section 1. Required: Applicant Information\n (All sections completed by the applicant, the person receiving a background check).  The \nrequesting entity will submit the applicant\n\u2019\ns information throug...",
-  "rules": {
-    "employee": null,
-    "category": "01 - Identity & Employment",
-    "confidence": null
-  },
   "llm": {
     "used": true,
     "employee": null,
-    "category": "01 - Identity & Employment"
+    "category": "02 - Background Check",
+    "description": "Background check applicant information form for Jayden Omondi including personal identification, address, SSN, driver's license, and self-disclosure questions regarding criminal history and child/vulnerable adult abuse."
   }
 }

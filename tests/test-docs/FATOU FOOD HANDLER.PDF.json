@@ -2,14 +2,10 @@
   "source_file": "FATOU FOOD HANDLER.PDF",
   "text_length": 433,
   "text_preview": "# Washington State Food Worker Card - Text Extraction\n\n**Header:**\n- Public Health\n- Seattle & King County\n- Washington State Food Worker Card\n\n**Name:**\n- FATOU MANNER\n\n**Signature Line:**\n- (signatu...",
-  "rules": {
-    "employee": null,
-    "category": "01 - Identity & Employment",
-    "confidence": null
-  },
   "llm": {
     "used": true,
     "employee": "Fatou Manneh",
-    "category": "01 - Identity & Employment"
+    "category": "01 - Identity & Employment",
+    "description": "Washington State Food Worker Card valid from 07/24/2025 to 07/24/2027"
   }
 }

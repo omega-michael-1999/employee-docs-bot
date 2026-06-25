@@ -2,14 +2,10 @@
   "source_file": "WhatsApp Image 2026-06-06 at 3.31.14 PM (2).jpeg",
   "text_length": 663,
   "text_preview": "# Certificate Details\n\n**Recipient:** PHILOMENA JOSEPH RENAUX\n\n**Certifying Body:** Washington State Department of Social & Health Services\n\n**Achievement:** Successfully completing 75 hours of DSHS A...",
-  "rules": {
-    "employee": "Philomena Joseph Renaux",
-    "category": "02 - Background Check",
-    "confidence": "high"
-  },
   "llm": {
-    "used": false,
-    "employee": null,
-    "category": null
+    "used": true,
+    "employee": "Philomena Joseph Renaux",
+    "category": "05 - Orientation & Training",
+    "description": "Certificate of completion for 75 hours of DSHS Approved Basic Caregiver Training from Huduma Center, signed by instructor Maureen Miringu on 04/02/2025"
   }
 }

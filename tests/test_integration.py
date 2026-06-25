@@ -42,7 +42,7 @@ def patch_config_and_extract(tmp_path):
         with patch.object(bot, "DB_PATH", db_path):
             with patch.object(bot, "extract_text", return_value="Fatou Manneh CPR card expired 2026"):
                 with patch.object(bot, "classify_by_llm",
-                                  return_value=("Fatou Manneh", "04 - CPR & First Aid")):
+                                  return_value=("Fatou Manneh", "04 - CPR & First Aid", "CPR card")):
                     bot.init_db(str(db_path))
                     yield
 

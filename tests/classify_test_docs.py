@@ -104,7 +104,7 @@ def classify_file(filepath: Path) -> dict:
         import importlib
         importlib.reload(bot_mod)
         try:
-            emp, cat = bot_mod.classify_by_llm(text, filename, employees, CAT_KEYWORDS)
+            emp, cat, desc = bot_mod.classify_by_llm(text, filename, employees, CAT_KEYWORDS)
             llm_used = True
         except Exception as e:
             pass
@@ -123,6 +123,7 @@ def classify_file(filepath: Path) -> dict:
             "used": llm_used,
             "employee": emp,
             "category": cat,
+            "description": desc,
         },
     }
 

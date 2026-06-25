@@ -2,14 +2,10 @@
   "source_file": "2 28 27 BLS CARD.pdf",
   "text_length": 802,
   "text_preview": "BASIC LIFE SUPPORT\nBLS\nProvider\nhas successfully completed the cognitive and skills evaluations  \nin accordance with the curriculum of the American Heart Association  \nBasic Life Support (CPR and AED)...",
-  "rules": {
-    "employee": "Nicholas Kachu Khamali",
-    "category": "01 - Identity & Employment",
-    "confidence": "high"
-  },
   "llm": {
-    "used": false,
-    "employee": null,
-    "category": null
+    "used": true,
+    "employee": "Nicholas Kachu Khamali",
+    "category": "04 - CPR & First Aid",
+    "description": "Basic Life Support (BLS) Provider certification from American Heart Association, valid until 02/2027"
   }
 }

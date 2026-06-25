@@ -2,14 +2,10 @@
   "source_file": "FATOU NAR LICENSE.pdf",
   "text_length": 637,
   "text_preview": "# Washington State Department of Health - Nursing Assistant Registration\n\n**Credential Holder:**\n- Name: Fatou Hannah\n\n**Credential Type:**\n- Nursing Assistant Registration\n\n**Status:**\n- Active\n\n**Cr...",
-  "rules": {
-    "employee": null,
-    "category": "01 - Identity & Employment",
-    "confidence": null
-  },
   "llm": {
     "used": true,
     "employee": "Fatou Manneh",
-    "category": "01 - Identity & Employment"
+    "category": "06 - HCA Certification & CE",
+    "description": "Washington State Nursing Assistant Registration credential, active status, expires 07/16/2026"
   }
 }

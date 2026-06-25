@@ -29,8 +29,8 @@ class TestClassifyDirectToLLM:
     def test_classify_calls_llm_for_obvious_text(self):
         """Even clear text like 'Fatou Manneh CPR card' goes to LLM, not rules."""
         employees = make_employees(["Fatou Manneh"])
-        with patch("bot.classify_by_llm", return_value=("Fatou Manneh", "04 - CPR & First Aid")) as mock_llm:
-            emp, cat, method = classify("Fatou Manneh CPR card", "", CAT_KEYWORDS, employees)
+        with patch("bot.classify_by_llm", return_value=("Fatou Manneh", "04 - CPR & First Aid", "CPR card")) as mock_llm:
+            emp, cat, desc, method = classify("Fatou Manneh CPR card", "", CAT_KEYWORDS, employees)
             mock_llm.assert_called_once()
             assert emp == "Fatou Manneh"
             assert cat == "04 - CPR & First Aid"
@@ -39,8 +39,8 @@ class TestClassifyDirectToLLM:
     def test_classify_calls_llm_for_ambiguous_text(self):
         """Ambiguous text also goes to LLM."""
         employees = make_employees(["Fatou Manneh"])
-        with patch("bot.classify_by_llm", return_value=("Fatou Manneh", "03 - Health Screening")) as mock_llm:
-            emp, cat, method = classify("TB test results for Fatou Manneh", "", CAT_KEYWORDS, employees)
+        with patch("bot.classify_by_llm", return_value=("Fatou Manneh", "03 - Health Screening", "TB test results")) as mock_llm:
+            emp, cat, desc, method = classify("TB test results for Fatou Manneh", "", CAT_KEYWORDS, employees)
             mock_llm.assert_called_once()
             assert emp == "Fatou Manneh"
             assert method == "llm"
@@ -48,8 +48,8 @@ class TestClassifyDirectToLLM:
     def test_classify_llm_fails_falls_to_manual(self):
         """When LLM fails, classify returns None, None, 'failed'."""
         employees = make_employees(["Fatou Manneh"])
-        with patch("bot.classify_by_llm", return_value=(None, None)):
-            emp, cat, method = classify("unrecognizable text", "", CAT_KEYWORDS, employees)
+        with patch("bot.classify_by_llm", return_value=(None, None, None)):
+            emp, cat, desc, method = classify("unrecognizable text", "", CAT_KEYWORDS, employees)
             assert emp is None
             assert cat is None
             assert method == "failed"

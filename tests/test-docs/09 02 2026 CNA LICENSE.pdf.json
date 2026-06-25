@@ -2,14 +2,10 @@
   "source_file": "09 02 2026 CNA LICENSE.pdf",
   "text_length": 1250,
   "text_preview": "04/16/2026\nSubject: Credential Verification\nTo Whom It May Concern:\nThis verifies the status of the Nursing Assistant Certification for Nicholas Kachu Khamali.\nThis site is a Primary Source for Verifi...",
-  "rules": {
-    "employee": "Nicholas Kachu Khamali",
-    "category": "01 - Identity & Employment",
-    "confidence": "low"
-  },
   "llm": {
     "used": true,
     "employee": "Nicholas Kachu Khamali",
-    "category": "01 - Identity & Employment"
+    "category": "06 - HCA Certification & CE",
+    "description": "Nursing Assistant Certification credential verification showing active status with expiration date 09/02/2026"
   }
 }
