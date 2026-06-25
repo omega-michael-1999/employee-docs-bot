@@ -1,41 +1,47 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Setup systemd services for all employee-docs-bot instances
+#
+# Usage: sudo ./setup-clients.sh
+#
+# Architecture:
+#   Dev (AFH_22)      → runs from the git subrepo (~/github/ai-os/subrepos/employee-docs-bot/)
+#   Prod (Edmonds Villa) → runs from /opt/employee-docs-bot/
+#
+# Each instance has its own .env file, Telegram bot token, and API keys.
 
-# Each AFH client gets their own named instance: employee-docs-bot-{client-name}
-# Usage: ./setup-clients.sh
-# Run this once to set up all current clients.
+set -euo pipefail
 
 echo "========================================"
 echo " Setting up all AFH client instances"
 echo "========================================"
 
-# --- Client 1: AFH_22 ---
+# Stop existing services first
+for svc in employee-docs-bot-afh-22 employee-docs-bot-edmonds-villa; do
+  if systemctl is-active --quiet "$svc" 2>/dev/null; then
+    echo "==> Stopping $svc..."
+    systemctl stop "$svc"
+  fi
+done
+
+# --- Dev Instance: AFH_22 (runs from subrepo) ---
 CLIENT="afh-22"
 SERVICE="employee-docs-bot-${CLIENT}"
-ENV_FILE="/opt/employee-docs-bot/.env"
+WORKDIR="/home/michael/github/ai-os/subrepos/employee-docs-bot"
+ENV_FILE="${WORKDIR}/.env"
+VENV_PYTHON="${WORKDIR}/.venv/bin/python3"
 
-# Stop existing generic service if it exists
-if systemctl is-active --quiet employee-docs-bot 2>/dev/null; then
-  echo "==> Stopping old generic service..."
-  sudo systemctl stop employee-docs-bot
-fi
-if systemctl is-enabled --quiet employee-docs-bot 2>/dev/null; then
-  echo "==> Disabling old generic service..."
-  sudo systemctl disable employee-docs-bot
-fi
-
-echo "==> Creating service file for ${SERVICE}..."
-sudo tee "/etc/systemd/system/${SERVICE}.service" > /dev/null << SERVICE
+echo "==> Creating service file for ${SERVICE} (dev, from subrepo)..."
+tee "/etc/systemd/system/${SERVICE}.service" > /dev/null << SERVICE
 [Unit]
-Description=Employee Docs Bot — AFH_22
+Description=Employee Docs Bot — AFH_22 (Dev)
 Documentation=https://github.com/omega-michael-1999/employee-docs-bot
 After=network.target
 
 [Service]
 Type=simple
 User=michael
-WorkingDirectory=/opt/employee-docs-bot
-ExecStart=/opt/employee-docs-bot/.venv/bin/python3 bot.py
+WorkingDirectory=${WORKDIR}
+ExecStart=${VENV_PYTHON} bot.py
 Restart=always
 RestartSec=10
 EnvironmentFile=${ENV_FILE}
@@ -45,35 +51,27 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 SERVICE
+echo "  ✓ ${SERVICE} service created (dev → subrepo)"
 
-echo "==> Setting up passwordless sudo for ${SERVICE}..."
-sudo tee "/etc/sudoers.d/${SERVICE}" > /dev/null << SUDOERS
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl start ${SERVICE}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl stop ${SERVICE}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SERVICE}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl status ${SERVICE}
-SUDOERS
-
-sudo systemctl daemon-reload
-sudo systemctl enable "${SERVICE}"
-
-# --- Client 2: Edmonds Villa ---
+# --- Prod Instance: Edmonds Villa (runs from /opt) ---
 CLIENT2="edmonds-villa"
 SERVICE2="employee-docs-bot-${CLIENT2}"
-ENV_FILE2="/opt/employee-docs-bot/.env.${CLIENT2}"
+WORKDIR2="/opt/employee-docs-bot"
+ENV_FILE2="${WORKDIR2}/.env.${CLIENT2}"
+VENV_PYTHON2="${WORKDIR2}/.venv/bin/python3"
 
-echo "==> Creating service file for ${SERVICE2}..."
-sudo tee "/etc/systemd/system/${SERVICE2}.service" > /dev/null << SERVICE2
+echo "==> Creating service file for ${SERVICE2} (production, from /opt)..."
+tee "/etc/systemd/system/${SERVICE2}.service" > /dev/null << SERVICE2
 [Unit]
-Description=Employee Docs Bot — Edmonds Villa
+Description=Employee Docs Bot — Edmonds Villa (Production)
 Documentation=https://github.com/omega-michael-1999/employee-docs-bot
 After=network.target
 
 [Service]
 Type=simple
 User=michael
-WorkingDirectory=/opt/employee-docs-bot
-ExecStart=/opt/employee-docs-bot/.venv/bin/python3 bot.py
+WorkingDirectory=${WORKDIR2}
+ExecStart=${VENV_PYTHON2} bot.py
 Restart=always
 RestartSec=10
 EnvironmentFile=${ENV_FILE2}
@@ -83,45 +81,37 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 SERVICE2
+echo "  ✓ ${SERVICE2} service created (prod → /opt)"
 
-echo "==> Setting up passwordless sudo for ${SERVICE2}..."
-sudo tee "/etc/sudoers.d/${SERVICE2}" > /dev/null << SUDOERS2
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl start ${SERVICE2}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl stop ${SERVICE2}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl restart ${SERVICE2}
-michael ALL=(root) NOPASSWD: /usr/bin/systemctl status ${SERVICE2}
-SUDOERS2
-
-sudo systemctl daemon-reload
-sudo systemctl enable "${SERVICE2}"
-
-# --- Remove old generic service file ---
+# --- Clean up old generic service ---
 if [ -f /etc/systemd/system/employee-docs-bot.service ]; then
   echo "==> Removing old generic service file..."
-  sudo rm /etc/systemd/system/employee-docs-bot.service
-  sudo systemctl daemon-reload
+  rm /etc/systemd/system/employee-docs-bot.service
+fi
+if [ -f /etc/systemd/system/employee-docs-bot-prod.service ]; then
+  echo "==> Removing old employee-docs-bot-prod.service..."
+  rm /etc/systemd/system/employee-docs-bot-prod.service
 fi
 
-# --- Cleanup old sudoers if exists ---
-if [ -f /etc/sudoers.d/employee-docs-bot ]; then
-  echo "==> Removing old generic sudoers..."
-  sudo rm /etc/sudoers.d/employee-docs-bot
-fi
+systemctl daemon-reload
+
+# Enable both
+systemctl enable employee-docs-bot-afh-22
+systemctl enable employee-docs-bot-edmonds-villa
 
 echo ""
 echo "========================================"
 echo " All clients set up. Manage with:"
 echo "========================================"
 echo ""
-echo "  sudo systemctl start employee-docs-bot-afh-22        # AFH_22"
-echo "  sudo systemctl start employee-docs-bot-edmonds-villa # Edmonds Villa"
-echo ""
-echo "  sudo systemctl status employee-docs-bot-afh-22"
-echo "  sudo systemctl status employee-docs-bot-edmonds-villa"
-echo ""
+echo "  # Dev instance (AFH_22 — from subrepo)"
+echo "  sudo systemctl {start|stop|restart} employee-docs-bot-afh-22"
 echo "  journalctl -u employee-docs-bot-afh-22 -f"
+echo ""
+echo "  # Prod instance (Edmonds Villa — from /opt)"
+echo "  sudo systemctl {start|stop|restart} employee-docs-bot-edmonds-villa"
 echo "  journalctl -u employee-docs-bot-edmonds-villa -f"
 echo ""
-echo " To add a new client later, duplicate the pattern:"
-echo "  - Create .env.{client-name}"
-echo "  - Copy this script and change the name"
+echo "  # Or use the scripts in deploy/"
+echo "  ./deploy/start-all.sh   ./deploy/stop-all.sh   ./deploy/status.sh"
+echo ""
